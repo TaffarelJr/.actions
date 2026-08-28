@@ -1,3 +1,9 @@
+# Inherit everything from the immediate parent template and override
+# only what differs. The Settings app resolves _extends RECURSIVELY,
+# so this repo also picks up every ancestor through the chain
+# (e.g. .template-dotnet -> .github). Bare repo name = same owner.
+_extends: .github
+
 repository:
   #─────────────────────────────────────────────────────────────────────────────
   # "About" section (on Home Page)
@@ -7,363 +13,45 @@ repository:
 
   # A short description of the repo
   # MUST BE A SINGLE LINE
-  description: Special base template repo. Contains core files to be included in all repos.
+  description: Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 
   # A URL with more information about the repo
-  homepage: https://github.com/TaffarelJr
+  # homepage: (none)
 
   # A comma-separated list of topics to set on the repo
   # See https://github.com/topics
-  topics: community-health-files, github-config, probot-settings, template-repository
+  topics: github-actions, reusable-workflows, ci-cd, automation
 
   #─────────────────────────────────────────────────────────────────────────────
-  # Settings → General
+  # Settings -> General
   # https://github.com/repository-settings/app/blob/master/docs/plugins/repository.md
   # https://docs.github.com/en/rest/repos/repos#update-a-repository
   #─────────────────────────────────────────────────────────────────────────────
 
   # The name of the repo
-  name: .github
+  name: .actions
 
-  # Whether the repo is available as a template
-  is_template: true
+  # Code repo: not a template (override the inherited value)
+  is_template: false
 
-  # Whether to require contributors to sign off on web-based commits
-  web_commit_signoff_required: false
+  #─────────────────────────────────────────────────────────────────────────────
+  # Settings -> General -> Pull Requests
+  #─────────────────────────────────────────────────────────────────────────────
 
-  # The default branch for the repo
-  # NOTE: The new branch must already exist before changing this value!
-  default_branch: main
-
-  # Whether downloads are enabled for this repo
-  # Hidden. Deprecated in 2012, but property still exists
-  has_downloads: true
-
-  # Whether the wiki is enabled for this repo
-  has_wiki: true
-
-  # Whether issues are enabled for this repo
-  has_issues: true
-
-  # Whether private forks are allowed for this repo
-  # Hidden. Personal, public repos are always fork-able
-  allow_forking: true
-
-  # Whether discussions are enabled for this repo
-  has_discussions: true
-
-  # Whether projects are enabled for this repo
-  has_projects: true
-
-  # Whether to allow merging pull requests with a merge commit
-  allow_merge_commit: false
-
-  # Default value for a merge commit title (PR_TITLE|MERGE_MESSAGE)
-  merge_commit_title: MERGE_MESSAGE
-
-  # Default value for a merge commit message (PR_TITLE|PR_BODY|BLANK)
-  merge_commit_message: PR_TITLE
-
-  # Whether to allow squash-merging pull requests
+  # Template layers rebase-merge so their history stays linear
+  # and no merge commits propagate downstream. A code repo is
+  # derived FROM but never derived from, so it can merge
+  # normally: rewrite history in a PR, then merge it as-is.
+  allow_merge_commit: true
   allow_squash_merge: false
+  allow_rebase_merge: false
 
-  # Default value for a squash merge commit title (PR_TITLE|COMMIT_OR_PR_TITLE)
-  squash_merge_commit_title: COMMIT_OR_PR_TITLE
+  #─────────────────────────────────────────────────────────────────────────────
+  # Settings -> Rules -> Rulesets
+  #─────────────────────────────────────────────────────────────────────────────
 
-  # Default value for a squash merge commit message (PR_BODY|COMMIT_MESSAGES|BLANK)
-  squash_merge_commit_message: COMMIT_MESSAGES
-
-  # Whether to allow rebase-merging pull requests
-  allow_rebase_merge: true
-
-  # Whether to always allow a pull request head branch
-  # that is behind its base branch to be updated
-  # even if it is not required to be up-to-date before merging
-  allow_update_branch: true
-
-  # Whether to allow auto-merge on pull requests
-  allow_auto_merge: false
-
-  # Whether to allow automatically deleting head branches
-  # when pull requests are merged
-  delete_branch_on_merge: true
-
-  # The visibility of the repo (public|private)
-  visibility: public
-
-  # Whether to archive this repo
-  # ('false' will unarchive a previously archived repo)
-  archived: false
-
-#───────────────────────────────────────────────────────────────────────────────
-# Settings → Collaborators
-# https://github.com/repository-settings/app/blob/master/docs/plugins/collaborators.md
-# https://docs.github.com/en/rest/collaborators/collaborators
-#───────────────────────────────────────────────────────────────────────────────
-collaborators:
-
-#───────────────────────────────────────────────────────────────────────────────
-# Settings → Branches
-# https://github.com/repository-settings/app/blob/master/docs/plugins/branches.md
-# https://docs.github.com/en/rest/branches/branch-protection
-#───────────────────────────────────────────────────────────────────────────────
-branches:
-
-  # This section is being deprecated in favor of rulesets (below)
-
-#───────────────────────────────────────────────────────────────────────────────
-# Settings → Rules → Rulesets
-# https://github.com/repository-settings/app/blob/master/docs/plugins/rulesets.md
-# https://docs.github.com/en/rest/repos/rules#update-a-repository-ruleset
-# https://github.com/github/ruleset-recipes
-#───────────────────────────────────────────────────────────────────────────────
 rulesets:
-  # Metadata-restriction rulesets (branch names, commit messages) apply only on
-  # org-owned repos, not personal accounts. Un-comment on an org.
-  # - name: Branch names must be OS-compatible
-  #   target: branch
-  #   enforcement: active
-  #   bypass_actors: []
-  #   conditions:
-  #     ref_name:
-  #       include: [~ALL]
-  #       exclude: []
-  #   rules:
-  #     - type: branch_name_pattern
-  #       parameters:
-  #         name: Allowed characters
-  #         negate: false
-  #         operator: regex
-  #         pattern: '^[\w/-]+$'
-
-  - name: Protect default branch history
-    target: branch
-    enforcement: active
-    bypass_actors: []
-    conditions:
-      ref_name:
-        include: [~DEFAULT_BRANCH]
-        exclude: []
-    rules:
-      - type: deletion
-      - type: non_fast_forward
-
-  # Deliberately its OWN ruleset, not a third rule in the one above.
-  # _extends inheritance is additive: a child can disable a whole named ruleset, but it can
-  # never remove a single rule from one it inherits (nested arrays concatenate). Template
-  # layers need linear history so no merge commits propagate downstream; leaf code repos
-  # merge normally, so they switch this off with:
-  #     rulesets:
-  #       - name: Require linear history
-  #         enforcement: disabled
+  # Only template layers need linear history. Inheritance is
+  # additive, so this can be switched off here but never removed.
   - name: Require linear history
-    target: branch
-    enforcement: active
-    bypass_actors: []
-    conditions:
-      ref_name:
-        include: [~DEFAULT_BRANCH]
-        exclude: []
-    rules:
-      - type: required_linear_history
-
-  - name: Protect version tags
-    target: tag
-    enforcement: active
-    bypass_actors: []
-    conditions:
-      ref_name:
-        include: [refs/tags/v*]
-        exclude: []
-    rules:
-      - type: deletion
-      - type: non_fast_forward
-
-  - name: Review each PR
-    target: branch
-    enforcement: active
-    bypass_actors:
-      - actor_id: 5 # Repository admin
-        actor_type: RepositoryRole
-        bypass_mode: pull_request
-    conditions:
-      ref_name:
-        include: [~DEFAULT_BRANCH]
-        exclude: []
-    rules:
-      - type: pull_request
-        parameters:
-          required_approving_review_count: 0
-          dismiss_stale_reviews_on_push: true
-          require_code_owner_review: true
-          require_last_push_approval: false
-          required_review_thread_resolution: true
-      - type: copilot_code_review
-        parameters:
-          review_on_push: true
-          review_draft_pull_requests: true
-
-  - name: Status checks must pass
-    target: branch
-    enforcement: active
-    bypass_actors:
-      - actor_id: 5 # Repository admin
-        actor_type: RepositoryRole
-        bypass_mode: pull_request
-    conditions:
-      ref_name:
-        include: [~DEFAULT_BRANCH]
-        exclude: []
-    rules:
-      - type: required_status_checks
-        parameters:
-          strict_required_status_checks_policy: true
-          do_not_enforce_on_create: true
-          required_status_checks:
-            - context: Analyze (actions)
-              integration_id: 15368 # GitHub Actions
-      - type: code_scanning
-        parameters:
-          code_scanning_tools:
-            - tool: CodeQL
-              security_alerts_threshold: high_or_higher
-              alerts_threshold: errors
-
-  # Metadata-restriction rulesets (branch names, commit messages) apply only on
-  # org-owned repos, not personal accounts. Un-comment on an org.
-  # - name: Use Conventional Commits
-  #   target: branch
-  #   enforcement: active
-  #   bypass_actors: []
-  #   conditions:
-  #     ref_name:
-  #       include: [~DEFAULT_BRANCH]
-  #       exclude: []
-  #   rules:
-  #     - type: commit_message_pattern
-  #       parameters:
-  #         name: Conventional Commits
-  #         negate: false
-  #         operator: regex
-  #         pattern: '^(build|chore|ci|docs|feat|fix|infra|perf|refactor|revert|style|test)(\([\w.-]+\))?(!)?: ([\w ])+([\s\S]*)'
-
-#───────────────────────────────────────────────────────────────────────────────
-# Issues → Labels
-# https://github.com/repository-settings/app/blob/master/docs/plugins/labels.md
-#───────────────────────────────────────────────────────────────────────────────
-labels:
-  # Work type (only pick one)
-
-  - name: new feature
-    color: "#9aff00"
-    description: New feature or request
-
-  - name: enhancement
-    color: "#00e68a"
-    description: Enhancements to existing features
-
-  - name: bug
-    color: "#c5d600"
-    description: Something isn't working
-
-  - name: performance
-    color: "#00b140"
-    description: Performance issue or regression
-
-  - name: documentation
-    color: "#00b89f"
-    description: Improvements or additions to documentation
-
-  - name: dependencies
-    color: "#009688"
-    description: Updates to dependencies
-
-  # Work status enhancers
-
-  - name: breaking change
-    color: "#b60205"
-    description: Functionality-breaking changes
-
-  - name: critical
-    color: "#ff0000"
-    description: Highest priority
-
-  - name: invalid
-    color: "#e4e669"
-    description: This doesn't seem right
-
-  - name: duplicate
-    color: "#cfd3d7"
-    description: This issue or pull request already exists
-
-  - name: wont fix
-    color: "#ffffff"
-    description: This will not be worked on
-
-  # Work in progress
-
-  - name: good first issue
-    color: "#7057ff"
-    description: Good for newcomers
-
-  - name: help wanted
-    color: "#a366ff"
-    description: Contributors welcome
-
-  - name: question
-    color: "#d876e3"
-    description: Further information is requested
-
-  - name: needs repro
-    color: "#d97b0b"
-    description: Missing replication steps
-
-  - name: needs fix
-    color: "#ffa366"
-    description: Looking for a solution
-
-  # GitHub Actions Workflows
-
-  - name: template sync
-    color: "#1267d3"
-    description: Changes replicated from template repo
-
-  # Dependabot Ecosystems
-  # https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories
-  # (each uses its own marketing color)
-
-  # - name: .NET SDK
-  #   color: "#522ed1"
-  #   description: Updates to the required .NET SDK
-
-  # - name: Dev Containers
-  #   color: "#2753e3"
-  #   description: Updates to Dev Container Features
-
-  # - name: Docker
-  #   color: "#2465ea"
-  #   description: Updates to Docker image tags in a Kubernetes manifest
-
-  # - name: Docker Compose
-  #   color: "#2465ea"
-  #   description: Updates to Docker image tags in a Compose file
-
-  # - name: Git submodule
-  #   color: "#ee4f39"
-  #   description: Updates to Git submodules
-
-  - name: GitHub Actions
-    color: "#000000"
-    description: Updates to GitHub Actions
-
-  # - name: npm
-  #   color: "#cb0817"
-  #   description: Updates to npm packages
-
-  # - name: NuGet
-  #   color: "#07497f"
-  #   description: Updates to NuGet packages
-
-  # - name: Terraform
-  #   color: "#7b43ba"
-  #   description: Updates to Terraform modules
+    enforcement: disabled
