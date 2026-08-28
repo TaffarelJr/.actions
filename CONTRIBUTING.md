@@ -269,13 +269,13 @@ This guide is based on the [contributing.md][contrib] website.
 
 <!-- GitHub Repo URIs (alphabetical by name) -->
 
-[ghDiscussions]: https://github.com/TaffarelJr/.github/discussions
-[ghEnhancement]: https://github.com/TaffarelJr/.github/issues/new?template=02_enhancement.yml
-[ghIssues]: https://github.com/TaffarelJr/.github/issues
-[ghNewBug]: https://github.com/TaffarelJr/.github/issues/new?template=03_bug_report.yml
-[ghNewFeature]: https://github.com/TaffarelJr/.github/issues/new?template=01_new_feature.yml
-[ghNewIssue]: https://github.com/TaffarelJr/.github/issues/new?template=04_performance_issue.yml
-[ghWiki]: https://github.com/TaffarelJr/.github/wiki
+[ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
+[ghEnhancement]: https://github.com/TaffarelJr/.actions/issues/new?template=02_enhancement.yml
+[ghIssues]: https://github.com/TaffarelJr/.actions/issues
+[ghNewBug]: https://github.com/TaffarelJr/.actions/issues/new?template=03_bug_report.yml
+[ghNewFeature]: https://github.com/TaffarelJr/.actions/issues/new?template=01_new_feature.yml
+[ghNewIssue]: https://github.com/TaffarelJr/.actions/issues/new?template=04_performance_issue.yml
+[ghWiki]: https://github.com/TaffarelJr/.actions/wiki
 
 <!-- Public URIs (alphabetical by name) -->
 

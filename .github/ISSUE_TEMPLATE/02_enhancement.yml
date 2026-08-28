@@ -8,7 +8,7 @@ body:
     attributes:
       value: >
         Thanks for helping us improve! 🤗 See
-        [CONTRIBUTING.md](https://github.com/TaffarelJr/.github/blob/main/CONTRIBUTING.md#how-do-i-submit-a-good-enhancement-suggestion)
+        [CONTRIBUTING.md](https://github.com/TaffarelJr/.actions/blob/main/CONTRIBUTING.md#how-do-i-submit-a-good-enhancement-suggestion)
         for tips on writing an effective enhancement suggestion.
 
   - type: checkboxes
@@ -20,13 +20,13 @@ body:
       options:
         - label: >
             I've searched the
-            [documentation](https://github.com/TaffarelJr/.github/tree/main/docs)
-            and [Wiki](https://github.com/TaffarelJr/.github/wiki),
+            [documentation](https://github.com/TaffarelJr/.actions/tree/main/docs)
+            and [Wiki](https://github.com/TaffarelJr/.actions/wiki),
             and I'm sure this enhancement doesn't currently exist.
           required: true
         - label: >
             I've searched (or posted in) the
-            [Discussions](https://github.com/TaffarelJr/.github/discussions)
+            [Discussions](https://github.com/TaffarelJr/.actions/discussions)
             about this enhancement.
           required: true
         - label: >
@@ -35,7 +35,7 @@ body:
           required: true
         - label: >
             I've searched the existing
-            [Issues](https://github.com/TaffarelJr/.github/issues)
+            [Issues](https://github.com/TaffarelJr/.actions/issues)
             and this enhancement has not been suggested yet.
           required: true
 
