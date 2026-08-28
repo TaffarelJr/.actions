@@ -100,14 +100,14 @@ jobs:
 
       - name: Install GitVersion
         if: steps.locate.outputs.found != 'true'
-        uses: gittools/actions/gitversion/setup@v4.0.1
+        uses: gittools/actions/gitversion/setup@v4.7.0
         with:
           versionSpec: "6.x"
 
       - name: Calculate a fallback version
         id: fallback
         if: steps.locate.outputs.found != 'true'
-        uses: gittools/actions/gitversion/execute@v4.0.1
+        uses: gittools/actions/gitversion/execute@v4.7.0
         with:
           useConfigFile: true
 
