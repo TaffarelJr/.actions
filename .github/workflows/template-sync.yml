@@ -4,8 +4,8 @@ name: Template Sync
 
 on:
   # Runs nightly at midnight UTC (https://crontab.guru/#0_0_*_*_*)
-  # schedule:
-  #   - cron: "0 0 * * *"
+  schedule:
+    - cron: "0 0 * * *"
 
   # Can be triggered manually
   workflow_dispatch:
@@ -27,7 +27,7 @@ env:
   # linear and no merge commit of ours can reach a leaf.
   # merge = a leaf: record a merge commit, because a leaf is derived from but
   # never derived FROM, so its merge commits stop with it.
-  SYNC_STRATEGY: rebase
+  SYNC_STRATEGY: merge
 
 jobs:
   template-sync:
