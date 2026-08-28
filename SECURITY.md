@@ -12,4 +12,4 @@ We may ask for additional information or guidance, if necessary.
 
 <!-- GitHub Repo URIs (alphabetical by name) -->
 
-[ghAdvisories]: https://github.com/TaffarelJr/.github/security/advisories
+[ghAdvisories]: https://github.com/TaffarelJr/.actions/security/advisories

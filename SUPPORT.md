@@ -53,9 +53,9 @@ from the [Remark][remark] repo.
 
 <!-- GitHub Repo URIs (alphabetical by name) -->
 
-[ghDiscussions]: https://github.com/TaffarelJr/.github/discussions
-[ghIssues]: https://github.com/TaffarelJr/.github/issues
-[ghWiki]: https://github.com/TaffarelJr/.github/wiki
+[ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
+[ghIssues]: https://github.com/TaffarelJr/.actions/issues
+[ghWiki]: https://github.com/TaffarelJr/.actions/wiki
 
 <!-- Public URIs (alphabetical by name) -->
 
