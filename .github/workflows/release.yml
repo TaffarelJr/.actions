@@ -87,7 +87,7 @@ jobs:
       - name: Download the built artifacts
         if: steps.locate.outputs.found == 'true'
         continue-on-error: true # An expired artifact must not kill the release
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.artifact-name }}
           path: artifacts
