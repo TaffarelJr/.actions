@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# One definition of "what version is this commit",
+# used by every workflow that needs one.
+# A composite action rather than a reusable workflow,
+# because a reusable workflow costs a whole extra runner job
+# just to hand back a string.
+#
+# GitVersion reads git history and GitVersion.yml only,
+# so this action is not specific to any language.
+# The caller must have checked out with fetch-depth: 0 -
+# GitVersion needs the full history and all the tags to work out
+# where the last release was.
+
+name: Version
+description: Calculates the SemVer version for the current commit.
+
+inputs:
+  summary:
+    description: >-
+      Write the version to the job summary. Turn this off where the version is
+      only a fallback, so the summary does not announce a number that was not
+      used.
+    required: false
+    default: "true"
+
+outputs:
+  # GitVersion emits far more than this, but every one added here has to be
+  # named by hand - a composite action cannot forward outputs it does not
+  # declare. These are the ones worth having; add to them rather than reaching
+  # past the action.
+  semVer:
+    description: The version, e.g. 1.4.0
+    value: ${{ steps.gitversion.outputs.semVer }}
+  majorMinorPatch:
+    description: The version without any pre-release label, e.g. 1.4.0
+    value: ${{ steps.gitversion.outputs.majorMinorPatch }}
+  fullSemVer:
+    description: The version including branch and build metadata
+    value: ${{ steps.gitversion.outputs.fullSemVer }}
+  major:
+    description: The major component, e.g. 1
+    value: ${{ steps.gitversion.outputs.major }}
+  minor:
+    description: The minor component, e.g. 4
+    value: ${{ steps.gitversion.outputs.minor }}
+  patch:
+    description: The patch component, e.g. 0
+    value: ${{ steps.gitversion.outputs.patch }}
+  preReleaseTag:
+    description: The pre-release tag, e.g. alpha.1, or empty on a release
+    value: ${{ steps.gitversion.outputs.preReleaseTag }}
+  preReleaseLabel:
+    description: The pre-release label, e.g. alpha, or empty on a release
+    value: ${{ steps.gitversion.outputs.preReleaseLabel }}
+  assemblySemVer:
+    description: The four-part assembly version, e.g. 1.4.0.0
+    value: ${{ steps.gitversion.outputs.assemblySemVer }}
+  informationalVersion:
+    description: The full descriptive version, for stamping into a binary
+    value: ${{ steps.gitversion.outputs.informationalVersion }}
+  branchName:
+    description: The branch the version was calculated on
+    value: ${{ steps.gitversion.outputs.branchName }}
+  sha:
+    description: The commit the version describes
+    value: ${{ steps.gitversion.outputs.sha }}
+  shortSha:
+    description: The abbreviated commit sha
+    value: ${{ steps.gitversion.outputs.shortSha }}
+  commitDate:
+    description: The commit date, e.g. 2026-08-29
+    value: ${{ steps.gitversion.outputs.commitDate }}
+  # The only output that is a decision rather than a passthrough: it encodes
+  # the tag convention, so no workflow has to rebuild 'v' + version itself and
+  # none of them can disagree about it.
+  tag:
+    description: The git tag for this version, e.g. v1.4.0
+    value: v${{ steps.gitversion.outputs.semVer }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install GitVersion
+      # Installed as a dotnet global tool. Every GitHub-hosted runner
+      # already has the .NET SDK, so no setup-dotnet step is needed -
+      # which is what keeps this usable
+      # from a repo that has nothing to do with .NET.
+      uses: gittools/actions/gitversion/setup@v4.0.1
+      with:
+        versionSpec: "6.x"
+
+    - name: Calculate version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v4.0.1
+      with:
+        useConfigFile: true
+
+    - name: Report version
+      if: inputs.summary == 'true'
+      shell: bash
+      env:
+        SEMVER: ${{ steps.gitversion.outputs.semVer }}
+      run: echo "### Version \`${SEMVER}\`" >> "$GITHUB_STEP_SUMMARY"
