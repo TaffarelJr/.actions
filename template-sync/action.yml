@@ -1,0 +1,254 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Brings a parent template's changes down into this repo as a pull request.
+#
+# Every repo's sync steps are identical; only the parent URL, the schedule and
+# the strategy differ. Keeping the steps here means a repo's own workflow is
+# just those three values plus its triggers, and a fix to the mechanism does
+# not have to walk the whole template chain.
+#
+# The caller must have checked out with fetch-depth: 0, using a token that can
+# push and open pull requests. Pull requests opened with the default
+# GITHUB_TOKEN cannot trigger workflows, so a required status check would never
+# report and the PR could never be merged.
+
+name: Template Sync
+description: Opens a pull request bringing the parent template's changes down.
+
+inputs:
+  template-url:
+    description: Clone URL of the parent template.
+    required: true
+  strategy:
+    description: >-
+      rebase for a template layer, replaying the parent's commits so history
+      stays linear and no merge commit of ours can reach a leaf. merge for a
+      leaf, which is the end of the chain and so the only place a merge commit
+      belongs.
+    required: true
+  template-branch:
+    description: Branch to sync from in the parent.
+    required: false
+    default: main
+  base-branch:
+    description: Branch being synced into.
+    required: false
+    default: main
+  sync-branch:
+    description: Branch the pull request is opened from.
+    required: false
+    default: template-sync
+  remote-name:
+    description: Name given to the parent's git remote.
+    required: false
+    default: template
+  token:
+    description: Token used to push the branch and open the pull request.
+    required: false
+    default: ${{ github.token }}
+  git-user-name:
+    description: Author name for the sync commits.
+    required: false
+    default: github-actions
+  git-user-email:
+    description: Author email for the sync commits.
+    required: false
+    default: github-actions@github.com
+
+outputs:
+  synced:
+    description: Whether a branch was built and a pull request opened or updated.
+    value: ${{ steps.plan.outputs.proceed }}
+  conflict:
+    description: Whether the result contains conflict markers needing resolution.
+    value: ${{ steps.build.outputs.conflict }}
+  missing:
+    description: How many patches the parent held that this repo did not.
+    value: ${{ steps.plan.outputs.missing }}
+
+runs:
+  using: composite
+  steps:
+    # A base template has no parent, but still inherits the caller workflow,
+    # which leaves the URL pointing at itself. Fail loudly rather than
+    # "syncing" a repo with its own history.
+    - name: Verify configuration
+      shell: bash
+      env:
+        TEMPLATE_URL: ${{ inputs.template-url }}
+        STRATEGY: ${{ inputs.strategy }}
+      run: |
+        if [[ "${TEMPLATE_URL}" == *"/${GITHUB_REPOSITORY#*/}.git" ]]; then
+          echo "::error::template-url points at this repo. A base template has no parent to sync from."
+          exit 1
+        fi
+        if [[ "${STRATEGY}" != "rebase" && "${STRATEGY}" != "merge" ]]; then
+          echo "::error::strategy must be 'rebase' or 'merge', not '${STRATEGY}'."
+          exit 1
+        fi
+
+    - name: Configure Git
+      shell: bash
+      env:
+        GIT_USER_NAME: ${{ inputs.git-user-name }}
+        GIT_USER_EMAIL: ${{ inputs.git-user-email }}
+      run: |
+        git config user.name "${GIT_USER_NAME}"
+        git config user.email "${GIT_USER_EMAIL}"
+
+    - name: Fetch the parent template
+      shell: bash
+      env:
+        REMOTE: ${{ inputs.remote-name }}
+        TEMPLATE_URL: ${{ inputs.template-url }}
+        TEMPLATE_BRANCH: ${{ inputs.template-branch }}
+      run: |
+        git remote remove "${REMOTE}" 2>/dev/null || true
+        git remote add "${REMOTE}" "${TEMPLATE_URL}"
+        git fetch --prune "${REMOTE}" "${TEMPLATE_BRANCH}"
+
+    # Compare by patch, not by commit id. Rebasing gives the parent's commits
+    # new ids on the way down, so asking "which commits are missing" would
+    # report the same work forever; asking "which patches are missing" is
+    # what actually converges.
+    - name: Decide what needs doing
+      id: plan
+      shell: bash
+      env:
+        REMOTE: ${{ inputs.remote-name }}
+        TEMPLATE_BRANCH: ${{ inputs.template-branch }}
+        BASE_BRANCH: ${{ inputs.base-branch }}
+        SYNC_BRANCH: ${{ inputs.sync-branch }}
+        STRATEGY: ${{ inputs.strategy }}
+      run: |
+        upstream="${REMOTE}/${TEMPLATE_BRANCH}"
+
+        missing=$(git cherry "origin/${BASE_BRANCH}" "${upstream}" \
+          | grep -c '^+' || true)
+        echo "missing=${missing}" >> "$GITHUB_OUTPUT"
+
+        if [[ "${missing}" == "0" ]]; then
+          echo "proceed=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::Already carries every patch from the template."
+          exit 0
+        fi
+
+        # An open sync branch that is already built on the current base and
+        # already carries every missing patch needs no rebuilding. Leaving it
+        # alone is what preserves a conflict resolution someone pushed to it.
+        if git rev-parse --verify -q "origin/${SYNC_BRANCH}" >/dev/null; then
+          stale=$(git cherry "origin/${SYNC_BRANCH}" "${upstream}" \
+            | grep -c '^+' || true)
+          if [[ "${stale}" == "0" ]] \
+            && git merge-base --is-ancestor \
+              "origin/${BASE_BRANCH}" "origin/${SYNC_BRANCH}"; then
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The existing ${SYNC_BRANCH} branch is already current."
+            exit 0
+          fi
+        fi
+
+        echo "proceed=true" >> "$GITHUB_OUTPUT"
+        echo "::notice::${missing} patch(es) to bring down via ${STRATEGY}."
+
+    - name: Build the sync branch
+      id: build
+      if: steps.plan.outputs.proceed == 'true'
+      shell: bash
+      env:
+        REMOTE: ${{ inputs.remote-name }}
+        TEMPLATE_BRANCH: ${{ inputs.template-branch }}
+        BASE_BRANCH: ${{ inputs.base-branch }}
+        SYNC_BRANCH: ${{ inputs.sync-branch }}
+        STRATEGY: ${{ inputs.strategy }}
+      run: |
+        upstream="${REMOTE}/${TEMPLATE_BRANCH}"
+        conflict=false
+        : > /tmp/conflicts.txt
+
+        if [[ "${STRATEGY}" == "rebase" ]]; then
+          # Start at the parent's tip and replay it onto our base. Rebase
+          # drops patches the base already has, so only genuinely new work
+          # lands, and the result is linear.
+          git checkout -B "${SYNC_BRANCH}" "${upstream}"
+          if ! git rebase "origin/${BASE_BRANCH}"; then
+            conflict=true
+            while [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; do
+              git diff --name-only --diff-filter=U >> /tmp/conflicts.txt
+              git add -A
+              git -c core.editor=true rebase --continue || true
+            done
+          fi
+        else
+          git checkout -B "${SYNC_BRANCH}" "origin/${BASE_BRANCH}"
+          if ! git merge --no-edit "${upstream}"; then
+            conflict=true
+            git diff --name-only --diff-filter=U >> /tmp/conflicts.txt
+            # MERGE_HEAD is still set, so this keeps both parents and git
+            # records that the merge happened. Left uncommitted, the next run
+            # would attempt the same merge again.
+            git add -A
+            git -c core.editor=true commit --no-edit
+          fi
+        fi
+
+        echo "conflict=${conflict}" >> "$GITHUB_OUTPUT"
+        if [[ "${conflict}" == "true" ]]; then
+          files=$(sort -u /tmp/conflicts.txt | sed '/^$/d' | tr '\n' ' ')
+          echo "::warning::Conflicts, committed as-is, in: ${files}"
+        fi
+
+    - name: Push the sync branch
+      if: steps.plan.outputs.proceed == 'true'
+      shell: bash
+      env:
+        SYNC_BRANCH: ${{ inputs.sync-branch }}
+      run: git push --force origin "${SYNC_BRANCH}"
+
+    - name: Create or update the pull request
+      if: steps.plan.outputs.proceed == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        BASE_BRANCH: ${{ inputs.base-branch }}
+        SYNC_BRANCH: ${{ inputs.sync-branch }}
+        TEMPLATE_URL: ${{ inputs.template-url }}
+        STRATEGY: ${{ inputs.strategy }}
+        CONFLICT: ${{ steps.build.outputs.conflict }}
+        MISSING: ${{ steps.plan.outputs.missing }}
+      run: |
+        if [[ "${CONFLICT}" == "true" ]]; then
+          title="NEEDS RESOLUTION: Merge changes from template repo"
+          note="⚠️ **Conflicts were committed as-is and must be resolved before merging.** See the job log for the file list."
+        else
+          title="Merge changes from template repo"
+          note="✅ Applied cleanly."
+        fi
+
+        body=$(printf '%s\n\n%s\n\n%s\n' \
+          "Automated sync of ${MISSING} patch(es) from \`${TEMPLATE_URL}\` via \`${STRATEGY}\`." \
+          "${note}" \
+          "This branch is rebuilt whenever either side moves, so it stays current until merged.")
+
+        number=$(gh pr list --repo "${GITHUB_REPOSITORY}" \
+          --head "${SYNC_BRANCH}" --state open \
+          --json number --jq '.[0].number // empty')
+
+        if [[ -z "${number}" ]]; then
+          gh pr create --repo "${GITHUB_REPOSITORY}" \
+            --base "${BASE_BRANCH}" --head "${SYNC_BRANCH}" \
+            --title "${title}" --body "${body}" --label 'template sync'
+          number=$(gh pr list --repo "${GITHUB_REPOSITORY}" \
+            --head "${SYNC_BRANCH}" --state open \
+            --json number --jq '.[0].number // empty')
+        else
+          gh pr edit "${number}" --repo "${GITHUB_REPOSITORY}" \
+            --title "${title}" --body "${body}"
+        fi
+
+        if [[ "${CONFLICT}" == "true" ]]; then
+          gh pr edit "${number}" --repo "${GITHUB_REPOSITORY}" --add-label 'needs fix'
+        else
+          gh pr edit "${number}" --repo "${GITHUB_REPOSITORY}" --remove-label 'needs fix' || true
+        fi
+        echo "::notice::Pull request #${number} is ready for review."
