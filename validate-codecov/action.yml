@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Checks a Codecov configuration file against Codecov's own validator.
+#
+# Codecov silently falls back to its defaults when the file does not parse, so
+# a typo fails nothing - it just quietly stops enforcing the thresholds. This
+# turns that into a failed check instead.
+#
+# The caller must have checked the repo out; only the file itself is read, so
+# fetch-depth: 1 is enough.
+
+name: Validate Codecov
+description: Validates a codecov.yml against Codecov's own validator.
+
+inputs:
+  config-path:
+    description: Path to the Codecov configuration file.
+    required: false
+    default: .github/codecov.yml
+  endpoint:
+    description: Codecov's validation endpoint.
+    required: false
+    default: https://codecov.io/validate
+
+outputs:
+  valid:
+    description: Whether the validator accepted the file.
+    value: ${{ steps.validate.outputs.valid }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate the Codecov configuration
+      id: validate
+      shell: bash
+      env:
+        CONFIG_PATH: ${{ inputs.config-path }}
+        ENDPOINT: ${{ inputs.endpoint }}
+      run: |
+        if [[ ! -f "${CONFIG_PATH}" ]]; then
+          echo "valid=false" >> "$GITHUB_OUTPUT"
+          echo "::error::${CONFIG_PATH} not found."
+          exit 1
+        fi
+
+        # --fail-with-body rather than -f: both turn an HTTP error into an exit
+        # code, but -f discards the body, which is the only place the validator
+        # says WHAT is wrong. And the status has to be captured with '||',
+        # because this shell runs with -e and would otherwise abort here,
+        # before anything could be reported.
+        status=0
+        output=$(curl --fail-with-body -sS \
+          --data-binary "@${CONFIG_PATH}" "${ENDPOINT}") || status=$?
+
+        echo "${output}"
+
+        if [[ "${status}" -ne 0 ]]; then
+          echo "valid=false" >> "$GITHUB_OUTPUT"
+          echo "::error file=${CONFIG_PATH}::${CONFIG_PATH} is not valid." \
+            "The validator's reason is in the log above."
+          exit 1
+        fi
+
+        echo "valid=true" >> "$GITHUB_OUTPUT"
+        echo "✅ ${CONFIG_PATH} is valid"

@@ -15,6 +15,7 @@ while still being able to version and release itself.
   - [changelog](#changelog)
   - [release-artifacts](#release-artifacts)
   - [template-sync](#template-sync)
+  - [validate-codecov](#validate-codecov)
 - [Versioning](#versioning)
 - [Contributing](#contributing)
 - [Support](#support)
@@ -120,6 +121,25 @@ which is the end of the chain and so the only place a merge commit belongs.
 The token matters: a pull request opened with the default `GITHUB_TOKEN`
 cannot trigger workflows, so a required status check would never report
 and the PR could never be merged.
+
+### validate-codecov
+
+Checks a `codecov.yml` against Codecov's own validator.
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 1
+
+- uses: TaffarelJr/.actions/validate-codecov@v1
+```
+
+Codecov silently falls back to its defaults when the file does not parse,
+so a typo fails nothing —
+it just quietly stops enforcing the thresholds.
+This turns that into a failed check,
+and puts the validator's own reason in the log
+so it says *what* is wrong rather than only *that* something is.
 
 ## Versioning
 
