@@ -62,6 +62,11 @@ outputs:
   conflict:
     description: Whether the result contains conflict markers needing resolution.
     value: ${{ steps.build.outputs.conflict }}
+  deleted:
+    description: >-
+      Paths the parent edited that this repo had already deleted, kept deleted
+      rather than raised as a conflict.
+    value: ${{ steps.build.outputs.deleted }}
   missing:
     description: How many patches the parent held that this repo did not.
     value: ${{ steps.plan.outputs.missing }}
@@ -163,27 +168,54 @@ runs:
         STRATEGY: ${{ inputs.strategy }}
       run: |
         upstream="${REMOTE}/${TEMPLATE_BRANCH}"
+        base="origin/${BASE_BRANCH}"
         conflict=false
         : > /tmp/conflicts.txt
+        : > /tmp/deleted.txt
+
+        # A file this repo deliberately deleted, which the parent has since
+        # edited, conflicts on every single sync. The repo's answer is already
+        # on record - it is not in the base branch - so honour that instead of
+        # raising the same question forever. Anything still present in the base
+        # is a real conflict and is left for a human.
+        resolve_deletions() {
+          local path
+          for path in $(git diff --name-only --diff-filter=U); do
+            if git cat-file -e "${base}:${path}" 2>/dev/null; then
+              continue
+            fi
+            git rm -q -f -- "${path}"
+            echo "${path}" >> /tmp/deleted.txt
+          done
+        }
 
         if [[ "${STRATEGY}" == "rebase" ]]; then
           # Start at the parent's tip and replay it onto our base. Rebase
           # drops patches the base already has, so only genuinely new work
           # lands, and the result is linear.
           git checkout -B "${SYNC_BRANCH}" "${upstream}"
-          if ! git rebase "origin/${BASE_BRANCH}"; then
-            conflict=true
+          if ! git rebase "${base}"; then
             while [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; do
-              git diff --name-only --diff-filter=U >> /tmp/conflicts.txt
+              resolve_deletions
+              # Whatever is still unmerged after that needs a human.
+              remaining=$(git diff --name-only --diff-filter=U)
+              if [[ -n "${remaining}" ]]; then
+                conflict=true
+                echo "${remaining}" >> /tmp/conflicts.txt
+              fi
               git add -A
               git -c core.editor=true rebase --continue || true
             done
           fi
         else
-          git checkout -B "${SYNC_BRANCH}" "origin/${BASE_BRANCH}"
+          git checkout -B "${SYNC_BRANCH}" "${base}"
           if ! git merge --no-edit "${upstream}"; then
-            conflict=true
-            git diff --name-only --diff-filter=U >> /tmp/conflicts.txt
+            resolve_deletions
+            remaining=$(git diff --name-only --diff-filter=U)
+            if [[ -n "${remaining}" ]]; then
+              conflict=true
+              echo "${remaining}" >> /tmp/conflicts.txt
+            fi
             # MERGE_HEAD is still set, so this keeps both parents and git
             # records that the merge happened. Left uncommitted, the next run
             # would attempt the same merge again.
@@ -193,6 +225,13 @@ runs:
         fi
 
         echo "conflict=${conflict}" >> "$GITHUB_OUTPUT"
+
+        deleted=$(sort -u /tmp/deleted.txt | sed '/^$/d' | tr '\n' ' ')
+        if [[ -n "${deleted}" ]]; then
+          echo "deleted=${deleted}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Kept deleted, as this repo already had: ${deleted}"
+        fi
+
         if [[ "${conflict}" == "true" ]]; then
           files=$(sort -u /tmp/conflicts.txt | sed '/^$/d' | tr '\n' ' ')
           echo "::warning::Conflicts, committed as-is, in: ${files}"
@@ -215,6 +254,7 @@ runs:
         TEMPLATE_URL: ${{ inputs.template-url }}
         STRATEGY: ${{ inputs.strategy }}
         CONFLICT: ${{ steps.build.outputs.conflict }}
+        DELETED: ${{ steps.build.outputs.deleted }}
         MISSING: ${{ steps.plan.outputs.missing }}
       run: |
         if [[ "${CONFLICT}" == "true" ]]; then
@@ -225,9 +265,15 @@ runs:
           note="✅ Applied cleanly."
         fi
 
-        body=$(printf '%s\n\n%s\n\n%s\n' \
+        deleted_note=""
+        if [[ -n "${DELETED}" ]]; then
+          deleted_note="Left deleted, because this repo had already removed them: \`${DELETED}\`"
+        fi
+
+        body=$(printf '%s\n\n%s\n\n%s\n\n%s\n' \
           "Automated sync of ${MISSING} patch(es) from \`${TEMPLATE_URL}\` via \`${STRATEGY}\`." \
           "${note}" \
+          "${deleted_note}" \
           "This branch is rebuilt whenever either side moves, so it stays current until merged.")
 
         number=$(gh pr list --repo "${GITHUB_REPOSITORY}" \
