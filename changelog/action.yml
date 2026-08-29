@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Writes the release body for a version, from the git history.
+#
+# The script and its module travel with the action, so a repo needs nothing
+# of its own to generate release notes - which is what lets a leaf repo
+# delete scripts/ and still be able to cut a release.
+#
+# The caller must have checked out with fetch-depth: 0. The notes are built
+# from the commits since the last version tag, so a shallow clone silently
+# produces the wrong range.
+
+name: Changelog
+description: Builds release notes and a changelog from the git history.
+
+inputs:
+  version:
+    description: The version being released, used in the heading and links.
+    required: true
+  output-path:
+    description: Where to write the Markdown.
+    required: false
+    default: Changelog.md
+  summary-path:
+    description: >-
+      File holding the prose summary for the top of the notes. When omitted,
+      a placeholder comment is written instead, which is invisible once the
+      release is published.
+    required: false
+    default: ""
+  from-tag:
+    description: >-
+      Start from this tag instead of the most recent version tag. Use it to
+      rebuild the notes for an earlier release.
+    required: false
+    default: ""
+  to-ref:
+    description: The commit being released.
+    required: false
+    default: HEAD
+  repository:
+    description: The owner/name used to build compare and commit links.
+    required: false
+    default: ${{ github.repository }}
+
+outputs:
+  path:
+    description: The file that was written.
+    value: ${{ inputs.output-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Write the release notes
+      shell: pwsh
+      run: >
+        & '${{ github.action_path }}/New-Changelog.ps1'
+        -Version '${{ inputs.version }}'
+        -OutputPath '${{ inputs.output-path }}'
+        -SummaryPath '${{ inputs.summary-path }}'
+        -FromTag '${{ inputs.from-tag }}'
+        -ToRef '${{ inputs.to-ref }}'
+        -Repository '${{ inputs.repository }}'
