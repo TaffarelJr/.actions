@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Finds the CI run that built this exact commit and takes its artifacts,
+# so a release ships bit-for-bit what was tested instead of rebuilding.
+#
+# Nothing here fails the caller. A missing run, an expired artifact or a
+# missing version.txt all report through the outputs, because a release
+# workflow wants to decide for itself whether to fall back or stop.
+
+name: Release Artifacts
+description: Downloads the artifacts built by the CI run for this commit.
+
+inputs:
+  build-workflow:
+    description: Name of the workflow whose artifacts should be released.
+    required: false
+    default: Continuous Integration
+  artifact-name:
+    description: Artifact holding the built output and version.txt.
+    required: false
+    default: packages
+  path:
+    description: Directory to download the artifact into.
+    required: false
+    default: artifacts
+  version-file:
+    description: >-
+      File inside the artifact holding the version that was built. It is
+      deleted after reading, so it is never published as a release asset.
+    required: false
+    default: version.txt
+  token:
+    description: Token used to read runs and artifacts from this repo.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  found:
+    description: Whether a successful CI run for this commit was located.
+    value: ${{ steps.locate.outputs.found }}
+  run-id:
+    description: The CI run the artifacts came from, or empty.
+    value: ${{ steps.locate.outputs.run-id }}
+  version:
+    description: >-
+      The version recorded by that build, or empty when there was no
+      version file to read.
+    value: ${{ steps.read.outputs.version }}
+  path:
+    description: Directory the artifact was downloaded into.
+    value: ${{ inputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Locate the CI run for this commit
+      id: locate
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        WORKFLOW: ${{ inputs.build-workflow }}
+      run: |
+        # The newest successful run for this exact commit. Anything older is
+        # a different tree; anything unsuccessful was never verified.
+        run_id=$(gh run list \
+          --workflow "$WORKFLOW" \
+          --commit "$GITHUB_SHA" \
+          --status success \
+          --limit 1 \
+          --json databaseId \
+          --jq '.[0].databaseId // empty')
+
+        if [ -z "$run_id" ]; then
+          echo "::warning::No successful '$WORKFLOW' run for $GITHUB_SHA."
+          echo "found=false" >> "$GITHUB_OUTPUT"
+          echo "run-id=" >> "$GITHUB_OUTPUT"
+        else
+          echo "Releasing the output of run $run_id"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Download the built artifacts
+      if: steps.locate.outputs.found == 'true'
+      continue-on-error: true # An expired artifact must not kill the release
+      uses: actions/download-artifact@v6
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.path }}
+        run-id: ${{ steps.locate.outputs.run-id }}
+        github-token: ${{ inputs.token }}
+
+    - name: Read the version that was built
+      id: read
+      shell: bash
+      env:
+        ARTIFACT_PATH: ${{ inputs.path }}
+        VERSION_FILE: ${{ inputs.version-file }}
+      run: |
+        # Reporting the version the build stamped in, rather than
+        # recalculating it, is what stops a release from naming a different
+        # number than the binaries it is shipping.
+        file="${ARTIFACT_PATH}/${VERSION_FILE}"
+        if [ -f "$file" ]; then
+          version=$(tr -d '[:space:]' < "$file")
+          echo "Version from the build: $version"
+          rm "$file"
+        else
+          version=""
+          echo "::notice::No ${VERSION_FILE} in the artifact."
+        fi
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
