@@ -1,0 +1,229 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# Drafts the GitHub Release. Every repo calls this one copy.
+#
+# Nothing is built here. The binaries were built, versioned, and uploaded by
+# the CI run for this exact commit; this workflow finds that run, takes its
+# artifacts, and attaches them. So what gets released is bit-for-bit what was
+# tested, and a release cannot differ from the build that verified it.
+#
+# The release is created as a DRAFT on purpose. No tag exists yet, nothing is
+# published, and nothing downstream fires until a human opens it, reads the
+# notes, and presses Publish. Deleting a draft leaves no trace, so a release
+# that turns out to be wrong costs nothing.
+#
+# Every action referenced here is spelled out in full rather than as './...'.
+# A reusable workflow runs against the caller's checkout, so a relative path
+# would look for the action in whichever repo called this.
+
+name: Reusable Release
+
+on:
+  workflow_call:
+    inputs:
+      build-workflow:
+        description: Name of the workflow whose artifacts should be released.
+        type: string
+        required: false
+        default: Continuous Integration
+      artifact-name:
+        description: Artifact holding the built output and version.txt.
+        type: string
+        required: false
+        default: packages
+    secrets:
+      copilot-pat:
+        description: >-
+          PAT for an account with Copilot, used to draft the summary. Optional;
+          without it the notes keep their placeholder comment.
+        required: false
+    outputs:
+      version:
+        description: The version that was drafted.
+        value: ${{ jobs.draft.outputs.version }}
+      url:
+        description: The draft release's URL.
+        value: ${{ jobs.draft.outputs.url }}
+
+jobs:
+  draft:
+    name: Draft Release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Needed to create the release
+      actions: read # Needed to read artifacts from the CI run
+
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      url: ${{ steps.create.outputs.url }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # The changelog needs all the history and tags
+
+      #─────────────────────────────────────────────────────────────────────────
+      # Find the build to release
+      #─────────────────────────────────────────────────────────────────────────
+
+      - name: Take the artifacts CI already built
+        id: artifacts
+        uses: TaffarelJr/.actions/release-artifacts@v1
+        with:
+          build-workflow: ${{ inputs.build-workflow }}
+          artifact-name: ${{ inputs.artifact-name }}
+
+      #─────────────────────────────────────────────────────────────────────────
+      # Decide the version
+      #─────────────────────────────────────────────────────────────────────────
+
+      - name: Calculate a fallback version
+        id: fallback
+        if: steps.artifacts.outputs.version == ''
+        uses: TaffarelJr/.actions/version@v1
+        with:
+          summary: "false" # Only a fallback; do not announce it as the version
+
+      - name: Resolve the version
+        id: resolve
+        shell: bash
+        env:
+          FROM_BUILD: ${{ steps.artifacts.outputs.version }}
+          FALLBACK: ${{ steps.fallback.outputs.semVer }}
+        run: |
+          # Prefer the version the build recorded, so the release reports what
+          # is actually stamped into the binaries rather than recalculating and
+          # risking a different answer.
+          if [ -n "$FROM_BUILD" ]; then
+            version="$FROM_BUILD"
+            echo "Version from the build: $version"
+          else
+            version="$FALLBACK"
+            echo "::warning::No version from the build; using GitVersion ($version)."
+          fi
+
+          if [ -z "$version" ]; then
+            echo "::error::Could not determine a version to release."
+            exit 1
+          fi
+
+          # Refuse to draft over a version that has already shipped. The tag
+          # is created when a release is published, so an existing one means
+          # this exact version is public - and replacing it would change what
+          # a consumer already resolved.
+          if git rev-parse "v$version" >/dev/null 2>&1; then
+            echo "::error::v$version is already tagged, so it has already" \
+              "been released. Merge something, or raise next-version in" \
+              "GitVersion.yml to choose the next number."
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      #─────────────────────────────────────────────────────────────────────────
+      # Write the notes
+      #─────────────────────────────────────────────────────────────────────────
+
+      - name: Generate the changelog
+        uses: TaffarelJr/.actions/changelog@v1
+        with:
+          version: ${{ steps.resolve.outputs.version }}
+          output-path: Changelog.md
+
+      # ── Have a model write the opening paragraph ──────────────────────────
+      #
+      # Always attempted, never required. A missing token, an expired one, a
+      # service outage or a network error all land in the same place: the
+      # placeholder comment stays, the release still gets drafted, and you can
+      # either write the paragraph yourself or delete the draft and re-run
+      # once the service is back.
+
+      - name: Build the summary prompt
+        shell: bash
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          {
+            echo "Below is a generated changelog for version $VERSION."
+            echo
+            echo "Write 2-4 sentences for the top of the release notes,"
+            echo "saying what changed and why a reader should care. Lead with"
+            echo "the most significant change, and mention breaking changes"
+            echo "first if there are any. Do not list every commit, do not"
+            echo "use headings, and do not repeat the commit counts."
+            echo "Plain prose, no preamble."
+            echo
+            echo "---"
+            echo
+            cat Changelog.md
+          } > prompt.txt
+
+      # Not pre-installed on GitHub-hosted runners, and the action shells out
+      # to it, so without this the summary step fails every time.
+      - name: Install the Copilot CLI
+        continue-on-error: true
+        run: npm install -g @github/copilot
+
+      - name: Summarize the changelog
+        id: summary
+        continue-on-error: true
+        uses: actions/ai-inference@v1
+        with:
+          prompt-file: prompt.txt
+          model: gpt-4.1
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.copilot-pat }}
+
+      - name: Rewrite the notes with the summary
+        if: steps.summary.outcome == 'success' && steps.summary.outputs.response-file != ''
+        uses: TaffarelJr/.actions/changelog@v1
+        with:
+          version: ${{ steps.resolve.outputs.version }}
+          output-path: Changelog.md
+          summary-path: ${{ steps.summary.outputs.response-file }}
+
+      #─────────────────────────────────────────────────────────────────────────
+      # Draft it
+      #─────────────────────────────────────────────────────────────────────────
+
+      - name: Create the draft release
+        id: create
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.resolve.outputs.version }}
+          ARTIFACT_PATH: ${{ steps.artifacts.outputs.path }}
+        run: |
+          # A draft is not idempotent - re-running would add a second draft for
+          # the same version - so replace any existing draft for this tag.
+          existing=$(gh release list --limit 100 \
+            --json tagName,isDraft \
+            --jq ".[] | select(.tagName == \"$TAG\" and .isDraft) | .tagName")
+          if [ -n "$existing" ]; then
+            echo "Replacing the existing draft for $TAG"
+            gh release delete "$TAG" --yes
+          fi
+
+          # --target pins the release to this exact commit, so the tag lands
+          # here when it is published even if main has moved on since.
+          url=$(gh release create "$TAG" \
+            --draft \
+            --title "$TAG" \
+            --notes-file Changelog.md \
+            --target "$GITHUB_SHA")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+          if [ -d "$ARTIFACT_PATH" ] && [ -n "$(ls -A "$ARTIFACT_PATH" 2>/dev/null)" ]; then
+            gh release upload "$TAG" "$ARTIFACT_PATH"/* --clobber
+            echo "Attached $(ls -1 "$ARTIFACT_PATH" | wc -l) file(s)"
+          else
+            echo "::notice::No artifacts to attach."
+          fi
+
+          {
+            echo "### Draft release [$TAG]($url)"
+            echo
+            echo "Review the notes, then press **Publish** to tag and ship."
+          } >> "$GITHUB_STEP_SUMMARY"
