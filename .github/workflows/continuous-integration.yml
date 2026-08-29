@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# Exercises the actions in this repo from the working tree.
+#
+# Every other repo pins '@v1', and so does this repo's own release workflow -
+# which means a change here would otherwise not be run by anything until after
+# it was released. So these steps deliberately use './' paths instead: they
+# resolve against the checkout, so a pull request tests what it actually
+# changed rather than what was last published.
+#
+# template-sync is not exercised here. It pushes a branch and opens a pull
+# request, so a self-test would either be destructive or need so much mocking
+# that it would stop testing the real thing.
+
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actions:
+    name: Exercise the actions
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read # Needed to check out the repo
+      actions: read # Needed by release-artifacts to look for CI runs
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # version and changelog both need the history and tags
+
+      - name: version
+        id: version
+        uses: ./version
+
+      - name: Assert version produced a SemVer
+        shell: bash
+        env:
+          SEMVER: ${{ steps.version.outputs.semVer }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if [[ ! "${SEMVER}" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::error::semVer was '${SEMVER}', which is not a version."
+            exit 1
+          fi
+          if [[ "${TAG}" != "v${SEMVER}" ]]; then
+            echo "::error::tag was '${TAG}', expected 'v${SEMVER}'."
+            exit 1
+          fi
+          echo "version -> ${SEMVER} / ${TAG}"
+
+      - name: changelog
+        uses: ./changelog
+        with:
+          version: ${{ steps.version.outputs.semVer }}
+          output-path: Changelog.md
+
+      - name: Assert the changelog has both documents
+        shell: bash
+        run: |
+          test -s Changelog.md \
+            || { echo "::error::Changelog.md is empty."; exit 1; }
+          grep -q '<details>' Changelog.md \
+            || { echo "::error::No folded changelog section."; exit 1; }
+          grep -q '<!--' Changelog.md \
+            || { echo "::error::No summary placeholder."; exit 1; }
+          echo "changelog -> $(wc -l < Changelog.md) lines"
+
+      # No CI run has published a 'packages' artifact for this repo, so the
+      # expected answer is a clean "found nothing" rather than a failure -
+      # which is the behaviour a release workflow depends on.
+      - name: release-artifacts
+        id: artifacts
+        uses: ./release-artifacts
+
+      - name: Assert release-artifacts reported rather than failed
+        shell: bash
+        env:
+          FOUND: ${{ steps.artifacts.outputs.found }}
+          VERSION: ${{ steps.artifacts.outputs.version }}
+        run: |
+          if [[ "${FOUND}" != "true" && "${FOUND}" != "false" ]]; then
+            echo "::error::found was '${FOUND}', expected true or false."
+            exit 1
+          fi
+          echo "release-artifacts -> found=${FOUND} version='${VERSION}'"
+
+      - name: Summarize
+        if: always()
+        shell: bash
+        env:
+          SEMVER: ${{ steps.version.outputs.semVer }}
+        run: |
+          {
+            echo "### Actions exercised"
+            echo
+            echo "- \`version\` → \`${SEMVER}\`"
+            echo "- \`changelog\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
+            echo "- \`release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
+          } >> "$GITHUB_STEP_SUMMARY"
