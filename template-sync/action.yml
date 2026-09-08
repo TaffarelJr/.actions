@@ -74,15 +74,26 @@ outputs:
 runs:
   using: composite
   steps:
-    # A base template has no parent, but still inherits the caller workflow,
-    # which leaves the URL pointing at itself. Fail loudly rather than
-    # "syncing" a repo with its own history.
+    # A base template has no parent, so its caller leaves template-url empty
+    # rather than omitting it - GitHub Actions only rejects a wholly missing
+    # input, not an empty one. Skip cleanly rather than let an empty URL reach
+    # `git remote add` and fail ungracefully in the next step.
     - name: Verify configuration
+      id: verify
       shell: bash
       env:
         TEMPLATE_URL: ${{ inputs.template-url }}
         STRATEGY: ${{ inputs.strategy }}
       run: |
+        if [[ -z "${TEMPLATE_URL}" ]]; then
+          echo "configured=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::No parent template configured. Nothing to sync."
+          exit 0
+        fi
+
+        # A URL that IS set but points at this repo means the caller inherited
+        # the workflow without retargeting it. Fail loudly rather than
+        # "syncing" a repo with its own history.
         if [[ "${TEMPLATE_URL}" == *"/${GITHUB_REPOSITORY#*/}.git" ]]; then
           echo "::error::template-url points at this repo. A base template has no parent to sync from."
           exit 1
@@ -91,8 +102,10 @@ runs:
           echo "::error::strategy must be 'rebase' or 'merge', not '${STRATEGY}'."
           exit 1
         fi
+        echo "configured=true" >> "$GITHUB_OUTPUT"
 
     - name: Configure Git
+      if: steps.verify.outputs.configured == 'true'
       shell: bash
       env:
         GIT_USER_NAME: ${{ inputs.git-user-name }}
@@ -102,6 +115,7 @@ runs:
         git config user.email "${GIT_USER_EMAIL}"
 
     - name: Fetch the parent template
+      if: steps.verify.outputs.configured == 'true'
       shell: bash
       env:
         REMOTE: ${{ inputs.remote-name }}
@@ -118,6 +132,7 @@ runs:
     # what actually converges.
     - name: Decide what needs doing
       id: plan
+      if: steps.verify.outputs.configured == 'true'
       shell: bash
       env:
         REMOTE: ${{ inputs.remote-name }}
