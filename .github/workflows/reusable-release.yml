@@ -169,7 +169,7 @@ jobs:
       - name: Summarize the changelog
         id: summary
         continue-on-error: true
-        uses: actions/ai-inference@v1
+        uses: actions/ai-inference@v3
         with:
           prompt-file: prompt.txt
           model: gpt-4.1
