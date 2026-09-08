@@ -1,12 +1,6 @@
-# .actions <!-- omit from toc -->
+# Custom GitHub Actions Repository <!-- omit from toc -->
 
 Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
-
-Every repo used to carry its own copy of this machinery,
-inherited through the template chain.
-Keeping it here instead means one copy to fix,
-and it lets a leaf repo delete `scripts/` entirely
-while still being able to version and release itself.
 
 #### Table of Contents <!-- omit from toc -->
 
