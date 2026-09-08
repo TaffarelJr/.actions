@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Repoints vMAJOR and vMAJOR.MINOR at a release's commit, so a consumer
+# pinning @v1 gets each new v1.x.y automatically. Those aliases are excluded
+# from the 'Protect version tags' ruleset for exactly this reason.
+#
+# Assumes releases publish in increasing order - it does not check whether
+# the tag is actually newer than what an alias already points at.
+
+name: Move Version Aliases
+description: Repoints the major and major.minor alias tags at a release tag.
+
+inputs:
+  tag:
+    description: >-
+      Release tag to move the aliases to, e.g. v1.4.2. Defaults to the tag of
+      the release that triggered the workflow.
+    required: false
+    default: ""
+  token:
+    description: Token used to read and move the tags.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Move the aliases
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TAG: ${{ inputs.tag }}
+        EVENT_TAG: ${{ github.event.release.tag_name }}
+        REPO: ${{ github.repository }}
+      run: |
+        tag="${TAG:-$EVENT_TAG}"
+
+        if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::${tag} is not a vX.Y.Z release tag."
+          exit 1
+        fi
+
+        commit=$(gh api "repos/${REPO}/commits/${tag}" --jq .sha)
+        IFS='.' read -r major minor _ <<< "${tag#v}"
+
+        for alias in "v${major}" "v${major}.${minor}"; do
+          if gh api "repos/${REPO}/git/ref/tags/${alias}" >/dev/null 2>&1; then
+            gh api --method PATCH "repos/${REPO}/git/refs/tags/${alias}" \
+              -f "sha=${commit}" -F force=true >/dev/null
+          else
+            gh api --method POST "repos/${REPO}/git/refs" \
+              -f "ref=refs/tags/${alias}" -f "sha=${commit}" >/dev/null
+          fi
+          echo "::notice::${alias} -> ${tag} (${commit})"
+        done

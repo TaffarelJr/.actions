@@ -7,6 +7,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 - [Getting Started](#getting-started)
   - [version](#version)
   - [changelog](#changelog)
+  - [move-version-aliases](#move-version-aliases)
   - [release-artifacts](#release-artifacts)
   - [template-sync](#template-sync)
   - [validate-codecov](#validate-codecov)
@@ -69,6 +70,21 @@ which stays invisible if the release is published unfilled.
 
 The script and its module travel with the action,
 so the calling repo needs nothing of its own.
+
+### move-version-aliases
+
+Repoints the major and major.minor alias tags at a release,
+so a consumer pinning `@v1` gets each new `v1.x.y` automatically.
+See [Versioning](#versioning) for why these tags exist.
+
+```yaml
+- uses: TaffarelJr/.actions/move-version-aliases@v1
+```
+
+`tag` defaults to the tag of the release that triggered the workflow,
+so a `release: published` trigger needs nothing else.
+Pass it explicitly for a `workflow_dispatch` re-run, or to move the
+aliases to some other tag by hand.
 
 ### release-artifacts
 
@@ -148,6 +164,7 @@ while released versions stay fixed. Two kinds of tag do that:
 
 Immutability applies to release-backed tags,
 which is why the moving ones are deliberately kept out of releases.
+Publishing a release moves both automatically; nothing to do by hand.
 
 ## Contributing
 
