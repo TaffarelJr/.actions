@@ -178,6 +178,6 @@ To report a vulnerability, see [SECURITY.md][securityFile].
 [securityFile]: ./SECURITY.md
 [supportFile]: ./SUPPORT.md
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [gitVersion]: https://gitversion.net/docs

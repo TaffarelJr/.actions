@@ -22,6 +22,6 @@ Two rules that must hold even if you cannot read that file:
 2. **Stay in your lane.** Only the concern named above. The other
    reviewers own theirs, and overlap wastes the reader's time.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [sourceFile]: ../../.claude/agents/security-reviewer.md

@@ -159,11 +159,11 @@ See the [local documentation][ccFile] for more information.
 [editorConfigFile]: ../.editorconfig
 [gitAttributesFile]: ../.gitattributes
 
-<!-- GitHub URIs (alphabetical by name) -->
+<!-- GitHub URIs (alphabetical) -->
 
 [styleCop]: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/blob/master/documentation/Configuration.md
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [cc]: https://www.conventionalcommits.org
 [csCoding]: https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions

@@ -1,14 +1,15 @@
 ---
 name: doc-conventions
 description: >-
-  Writes and reviews the Markdown documents in docs/ to this repo's house
-  style: timeless prose, footnote-style link definitions in ordered groups,
-  en-US spelling, and external links in place of re-explained third-party
-  material. Use when adding a document, editing one, or auditing them for
-  accuracy and staleness.
+  Writes and reviews README.md and the Markdown documents in docs/ to this
+  repo's house style: timeless prose, footnote-style link definitions in
+  ordered groups, en-US spelling, and external links in place of
+  re-explained third-party material. Use when adding a document, editing
+  one, or auditing them for accuracy and staleness.
 when_to_use: >-
-  Trigger phrases: write a doc, update the docs, review docs/, add a document,
-  are the docs accurate, check the docs for staleness, fix the links in a doc.
+  Trigger phrases: write a doc, update the docs, update the README, review
+  docs/, add a document, are the docs accurate, check the docs for
+  staleness, fix the links in a doc.
 allowed-tools: Read Edit Write Grep Glob Bash WebFetch
 ---
 
@@ -17,6 +18,10 @@ elsewhere. Instruction files state rules; these explain them. Never restate a
 rule here that an instruction file already owns, and never leave a rule only
 here — non-agentic tools get instruction text injected and will never follow a
 link.
+
+README.md is not a `docs/` document — it introduces the project rather than
+explaining a rule — but it follows the same formatting, language, and
+timelessness conventions below.
 
 ## Write for a reader two years from now
 
@@ -39,6 +44,9 @@ stopped being true. Prefer a sentence that cannot rot.
 - A number that is enforced somewhere else — a coverage target, a timeout, a
   version. Say the check reports it. Two copies of a threshold is one too many.
 - Prices, plan names, or vendor tiers. They change and they date the document.
+- What something used to be, or how it worked before a change. A reader
+  compares the document only against what is true today; explain the
+  current shape and why, not the history that led to it.
 
 **Do write down:** the shape of the system, why it is shaped that way, what
 breaks if you do it differently, and how to perform the task.
@@ -131,9 +139,9 @@ line:
 ```markdown
 <!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
-<!-- GitHub URIs (alphabetical by name) -->
+<!-- GitHub URIs (alphabetical) -->
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 ```
 
 - **Source Code** — paths inside the repo. Sorted the way an editor's explorer

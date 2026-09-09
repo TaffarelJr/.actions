@@ -35,10 +35,10 @@ and resolves `_extends` **recursively**,
 so it inherits the whole template chain.
 Declare only what differs from the immediate parent.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [settingsFile]: ../settings.yml
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [ghSettings]: https://github.com/repository-settings/app

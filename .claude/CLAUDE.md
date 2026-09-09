@@ -11,7 +11,7 @@
 - Everything in [docs/][docsFolder] is reference material.
   Read a document when a rule above is ambiguous, not by default.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [instructionsFolder]: ../.github/instructions/
 [docsFolder]: ../docs/

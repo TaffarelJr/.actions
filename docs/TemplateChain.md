@@ -306,6 +306,6 @@ Only genuinely new content conflicts.
 [syncFile]: ../.github/workflows/template-sync.yml
 [settingsFile]: ../.github/settings.yml
 
-<!-- GitHub URIs (alphabetical by name) -->
+<!-- GitHub URIs (alphabetical) -->
 
 [ghSettings]: https://github.com/repository-settings/app

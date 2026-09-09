@@ -16,14 +16,14 @@ repository:
   description: Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 
   # A URL with more information about the repo
-  # homepage: (none)
+  homepage: ""
 
   # A comma-separated list of topics to set on the repo
   # See https://github.com/topics
   topics: github-actions, reusable-workflows, ci-cd, automation
 
   #─────────────────────────────────────────────────────────────────────────────
-  # Settings -> General
+  # Settings → General
   # https://github.com/repository-settings/app/blob/master/docs/plugins/repository.md
   # https://docs.github.com/en/rest/repos/repos#update-a-repository
   #─────────────────────────────────────────────────────────────────────────────
@@ -31,25 +31,21 @@ repository:
   # The name of the repo
   name: .actions
 
-  # Code repo: not a template (override the inherited value)
+  # Whether the repo is available as a template
   is_template: false
 
-  #─────────────────────────────────────────────────────────────────────────────
-  # Settings -> General -> Pull Requests
-  #─────────────────────────────────────────────────────────────────────────────
-
-  # Template layers rebase-merge so their history stays linear
-  # and no merge commits propagate downstream. A code repo is
-  # derived FROM but never derived from, so it can merge
-  # normally: rewrite history in a PR, then merge it as-is.
+  # Whether to allow merging pull requests with a merge commit
   allow_merge_commit: true
-  allow_squash_merge: false
+
+  # Whether to allow rebase-merging pull requests
   allow_rebase_merge: false
 
-  #─────────────────────────────────────────────────────────────────────────────
-  # Settings -> Rules -> Rulesets
-  #─────────────────────────────────────────────────────────────────────────────
-
+#───────────────────────────────────────────────────────────────────────────────
+# Settings → Rules → Rulesets
+# https://github.com/repository-settings/app/blob/master/docs/plugins/rulesets.md
+# https://docs.github.com/en/rest/repos/rules#update-a-repository-ruleset
+# https://github.com/github/ruleset-recipes
+#───────────────────────────────────────────────────────────────────────────────
 rulesets:
   # Only template layers need linear history. Inheritance is
   # additive, so this can be switched off here but never removed.

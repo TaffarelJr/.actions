@@ -88,12 +88,12 @@ that can help you get familiar with it:
 [releaseFile]: ./ReleaseProcess.md
 [messageFile]: ../.gitmessage
 
-<!-- GitHub URIs (alphabetical by name) -->
+<!-- GitHub URIs (alphabetical) -->
 
 [qoomon]: https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13
 [zekfad]: https://gist.github.com/Zekfad/f51cb06ac76e2457f11c80ed705c95a3
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [cc]: https://www.conventionalcommits.org
 [kapeli]: https://kapeli.com/cheat_sheets/Conventional_Commits.docset/Contents/Resources/Documents/index

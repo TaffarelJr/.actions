@@ -14,9 +14,9 @@ description: Markdown conventions for docs and community health files
   Group the definitions under up to three comments, in this order, each list
   alphabetical, and omit a group with nothing in it:
   - `<!-- Source Code URIs (folders first, then files; each alphabetical) -->`
-  - `<!-- GitHub URIs (alphabetical by name) -->` — anything on a
+  - `<!-- GitHub URIs (alphabetical) -->` — anything on a
     `github.com` host
-  - `<!-- Public URIs (alphabetical by name) -->` — everything else
+  - `<!-- Public URIs (alphabetical) -->` — everything else
 - Mark a heading with `<!-- omit from toc -->`
   to keep it out of a generated table of contents.
 - Align table pipes, and declare column alignment with `:---` or `:---:`.
@@ -28,7 +28,7 @@ description: Markdown conventions for docs and community health files
 - Trailing whitespace is significant in Markdown, so it isn't trimmed here.
   Don't add it on purpose.
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [mermaid]: https://mermaid.js.org
 [plantUml]: https://plantuml.com
