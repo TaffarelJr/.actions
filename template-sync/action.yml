@@ -272,11 +272,10 @@ runs:
         DELETED: ${{ steps.build.outputs.deleted }}
         MISSING: ${{ steps.plan.outputs.missing }}
       run: |
+        title="Merge changes from template repo"
         if [[ "${CONFLICT}" == "true" ]]; then
-          title="NEEDS RESOLUTION: Merge changes from template repo"
           note="⚠️ **Conflicts were committed as-is and must be resolved before merging.** See the job log for the file list."
         else
-          title="Merge changes from template repo"
           note="✅ Applied cleanly."
         fi
 
