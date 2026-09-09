@@ -311,13 +311,13 @@ Everything above that works without modification.
 [conventions]: ./ConventionalCommits.md
 [gitVersionFile]: ../GitVersion.yml
 
-<!-- GitHub URIs (alphabetical by name) -->
+<!-- GitHub URIs (alphabetical) -->
 
 [actionsRepo]: https://github.com/TaffarelJr/.actions
 [actionsSecrets]: https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions
 [aiAction]: https://github.com/actions/ai-inference
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [gitVersion]: https://gitversion.net/docs
 [semver]: https://semver.org

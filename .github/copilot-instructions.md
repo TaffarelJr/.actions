@@ -10,7 +10,7 @@ and are applied automatically by their `applyTo` globs.
 Reference material lives in [docs/][docsFolder].
 See [docs/AiInstructions.md][aiFile] for how the pieces fit together.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [instructionsFolder]: ./instructions/
 [aiFile]: ../docs/AiInstructions.md

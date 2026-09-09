@@ -260,14 +260,14 @@ to avoid duplication of effort.
 This guide is based on the [contributing.md][contrib] website.
 [Make your own][contribEx]!
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [docsFolder]: ./docs/
 [styleguideFile]: ./docs/Styleguide.md
 [cocFile]: ./CODE_OF_CONDUCT.md
 [securityFile]: ./SECURITY.md
 
-<!-- GitHub Repo URIs (alphabetical by name) -->
+<!-- GitHub Repo URIs (alphabetical) -->
 
 [ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
 [ghEnhancement]: https://github.com/TaffarelJr/.actions/issues/new?template=02_enhancement.yml
@@ -277,7 +277,7 @@ This guide is based on the [contributing.md][contrib] website.
 [ghNewIssue]: https://github.com/TaffarelJr/.actions/issues/new?template=04_performance_issue.yml
 [ghWiki]: https://github.com/TaffarelJr/.actions/wiki
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [contrib]: https://contributing.md/
 [contribEx]: https://contributing.md/example/

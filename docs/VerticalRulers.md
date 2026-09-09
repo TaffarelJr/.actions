@@ -73,7 +73,7 @@ Happy coding!
 [vsCodeSettingsFile]: ../.vscode/settings.json
 [editorConfigFile]: ../.editorconfig
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [extension]: https://marketplace.visualstudio.com/items?itemName=PaulHarrington.EditorGuidelinesPreview
 [vimRC]: https://www.freecodecamp.org/news/vimrc-configuration-guide-customize-your-vim-editor

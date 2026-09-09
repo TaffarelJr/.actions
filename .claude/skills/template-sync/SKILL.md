@@ -85,6 +85,6 @@ Read the run: `gh run view <id> --log-failed`. The usual causes are a
 (`gh variable list` shows both it and `TEMPLATE_SYNC_STRATEGY`), a ruleset blocking
 the push of the `template-sync` branch, or the parent having no `main`.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [chainFile]: ../../../docs/TemplateChain.md

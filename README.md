@@ -178,6 +178,17 @@ To report a vulnerability, see [SECURITY.md][securityFile].
 [securityFile]: ./SECURITY.md
 [supportFile]: ./SUPPORT.md
 
+<<<<<<< HEAD
 <!-- Public URIs (alphabetical by name) -->
+=======
+<!-- GitHub Repo URIs (alphabetical) -->
+
+[actionsRepo]: https://github.com/TaffarelJr/.actions
+[ghGitAttributes]: https://github.com/gitattributes/gitattributes
+[ghGitIgnore]: https://github.com/github/gitignore
+[ghSettings]: https://github.com/repository-settings/app
+
+<!-- Public URIs (alphabetical) -->
+>>>>>>> template/main
 
 [gitVersion]: https://gitversion.net/docs

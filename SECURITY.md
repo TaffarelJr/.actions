@@ -10,6 +10,6 @@ The repo owners will keep you informed
 of progress toward a fix and will make any necessary announcements.
 We may ask for additional information or guidance, if necessary.
 
-<!-- GitHub Repo URIs (alphabetical by name) -->
+<!-- GitHub Repo URIs (alphabetical) -->
 
 [ghAdvisories]: https://github.com/TaffarelJr/.actions/security/advisories

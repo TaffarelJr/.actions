@@ -112,7 +112,7 @@ Decorative emoji are not — except in community-health boilerplate carried
 over from an external template (`CONTRIBUTING.md`,
 `pull_request_template.md`), which is left as imported.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [agentsFolder]: ./.claude/agents/
 [skillsFolder]: ./.claude/skills/
@@ -126,6 +126,6 @@ over from an external template (`CONTRIBUTING.md`,
 [gitAttributesFile]: ./.gitattributes
 [contribFile]: ./CONTRIBUTING.md
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [solid]: https://en.wikipedia.org/wiki/SOLID

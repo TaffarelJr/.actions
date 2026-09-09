@@ -45,19 +45,19 @@ See [CONTRIBUTING.md][contribFile] on how to contribute.
 This document was shamelessly stolen and modified
 from the [Remark][remark] repo.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [docsFolder]: ./docs/
 [cocFile]: ./CODE_OF_CONDUCT.md
 [contribFile]: ./CONTRIBUTING.md
 
-<!-- GitHub Repo URIs (alphabetical by name) -->
+<!-- GitHub Repo URIs (alphabetical) -->
 
 [ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
 [ghIssues]: https://github.com/TaffarelJr/.actions/issues
 [ghWiki]: https://github.com/TaffarelJr/.actions/wiki
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [codeSandbox]: https://codesandbox.io
 [remark]: https://github.com/remarkjs/.github/blob/main/support.md

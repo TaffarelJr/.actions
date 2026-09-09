@@ -87,6 +87,6 @@ layer-specific behavior belongs in an additive `New-Repo-<NN>-<slug>.psm1`.
   `Write-Done` (or `Write-Done -Skip`). Several outcomes in one step get
   `Write-Doing` once, then `Write-Ok` or `Write-Skip` per outcome.
 
-<!-- Source Code URIs (alphabetical by file hierarchy) -->
+<!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [scriptsFile]: ../../scripts/README.md

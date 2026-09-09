@@ -237,6 +237,6 @@ Never copy rules into it.
 [docsFolder]: ./
 [agentsFile]: ../AGENTS.md
 
-<!-- Public URIs (alphabetical by name) -->
+<!-- Public URIs (alphabetical) -->
 
 [agents]: https://agents.md
