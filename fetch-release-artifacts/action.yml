@@ -7,7 +7,7 @@
 # missing version.txt all report through the outputs, because a release
 # workflow wants to decide for itself whether to fall back or stop.
 
-name: Release Artifacts
+name: Fetch Release Artifacts
 description: Downloads the artifacts built by the CI run for this commit.
 
 inputs:

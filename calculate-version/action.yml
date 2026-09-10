@@ -12,7 +12,7 @@
 # GitVersion needs the full history and all the tags to work out
 # where the last release was.
 
-name: Version
+name: Calculate Version
 description: Calculates the SemVer version for the current commit.
 
 inputs:
