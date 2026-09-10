@@ -96,6 +96,26 @@ jobs:
           fi
           echo "fetch-release-artifacts -> found=${FOUND} version='${VERSION}'"
 
+      # Nor has any run built a version called 0.0.0-none, so asking for one
+      # by name should come back empty-handed the same way.
+      - name: fetch-release-artifacts (by version)
+        id: by-version
+        uses: ./fetch-release-artifacts
+        with:
+          version: v0.0.0-none
+          search-depth: 3
+
+      - name: Assert the version lookup reported rather than failed
+        shell: bash
+        env:
+          FOUND: ${{ steps.by-version.outputs.found }}
+        run: |
+          if [[ "${FOUND}" != "false" ]]; then
+            echo "::error::found was '${FOUND}', expected false."
+            exit 1
+          fi
+          echo "fetch-release-artifacts (by version) -> found=${FOUND}"
+
       # This repo carries the inherited codecov.yml, so the validator should
       # accept it. A failure here is either a real typo in that file or a
       # regression in the action.
@@ -125,6 +145,6 @@ jobs:
             echo
             echo "- \`calculate-version\` → \`${SEMVER}\`"
             echo "- \`build-changelog\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
-            echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
+            echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}, by version found=${{ steps.by-version.outputs.found }}"
             echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
           } >> "$GITHUB_STEP_SUMMARY"

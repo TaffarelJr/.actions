@@ -3,9 +3,10 @@
 # Drafts the GitHub Release. Every repo calls this one copy.
 #
 # Nothing is built here. The binaries were built, versioned, and uploaded by
-# the CI run for this exact commit; this action finds that run, takes its
-# artifacts, and attaches them. So what gets released is bit-for-bit what was
-# tested, and a release cannot differ from the build that verified it.
+# a CI run - for this exact commit, or for the version named in 'version';
+# this action finds that run, takes its artifacts, and attaches them. So what
+# gets released is bit-for-bit what was tested, and a release cannot differ
+# from the build that verified it.
 #
 # The release is created as a DRAFT on purpose. No tag exists yet, nothing is
 # published, and nothing downstream fires until a human opens it, reads the
@@ -27,6 +28,13 @@ inputs:
     description: Artifact holding the built output and version.txt.
     required: false
     default: packages
+  version:
+    description: >-
+      Release this earlier build instead of this commit's, e.g. 1.4.2 or
+      v1.4.2. There is no fallback: if no CI run still holds that version's
+      artifact, the draft is refused.
+    required: false
+    default: ""
   copilot-pat:
     description: >-
       PAT for an account with Copilot, used to draft the summary. Optional;
@@ -55,6 +63,7 @@ runs:
       with:
         build-workflow: ${{ inputs.build-workflow }}
         artifact-name: ${{ inputs.artifact-name }}
+        version: ${{ inputs.version }}
 
     #─────────────────────────────────────────────────────────────────────────
     # Decide the version
@@ -62,7 +71,7 @@ runs:
 
     - name: Calculate a fallback version
       id: fallback
-      if: steps.artifacts.outputs.version == ''
+      if: steps.artifacts.outputs.version == '' && inputs.version == ''
       uses: TaffarelJr/.actions/calculate-version@v1
       with:
         summary: "false" # Only a fallback; do not announce it as the version
@@ -71,9 +80,25 @@ runs:
       id: resolve
       shell: bash
       env:
+        REQUESTED: ${{ inputs.version }}
+        FOUND: ${{ steps.artifacts.outputs.found }}
         FROM_BUILD: ${{ steps.artifacts.outputs.version }}
+        BUILT_SHA: ${{ steps.artifacts.outputs.sha }}
         FALLBACK: ${{ steps.fallback.outputs.semVer }}
       run: |
+        requested="${REQUESTED#v}"
+
+        # A named version can only come from the build that produced it, and
+        # there is nothing to fall back to: a release ships a build.
+        if [ -n "$requested" ]; then
+          if [ "$FOUND" != "true" ] || [ "$FROM_BUILD" != "$requested" ]; then
+            echo "::error::No CI build of $requested is available to release." \
+              "Either it was never built on this branch, or its artifact" \
+              "has expired."
+            exit 1
+          fi
+        fi
+
         # Prefer the version the build recorded, so the release reports what
         # is actually stamped into the binaries rather than recalculating and
         # risking a different answer.
@@ -102,6 +127,7 @@ runs:
         fi
 
         echo "version=$version" >> "$GITHUB_OUTPUT"
+        echo "sha=${BUILT_SHA:-$GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
     #─────────────────────────────────────────────────────────────────────────
     # Write the notes
@@ -112,6 +138,7 @@ runs:
       with:
         version: ${{ steps.resolve.outputs.version }}
         output-path: Changelog.md
+        to-ref: ${{ steps.resolve.outputs.sha }}
 
     # ── Have a model write the opening paragraph ──────────────────────────
     #
@@ -164,6 +191,7 @@ runs:
       with:
         version: ${{ steps.resolve.outputs.version }}
         output-path: Changelog.md
+        to-ref: ${{ steps.resolve.outputs.sha }}
         summary-path: ${{ steps.summary.outputs.response-file }}
 
     #─────────────────────────────────────────────────────────────────────────
@@ -176,6 +204,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         TAG: v${{ steps.resolve.outputs.version }}
+        SHA: ${{ steps.resolve.outputs.sha }}
         ARTIFACT_PATH: ${{ steps.artifacts.outputs.path }}
       run: |
         # A draft is not idempotent - re-running would add a second draft for
@@ -188,13 +217,13 @@ runs:
           gh release delete "$TAG" --yes
         fi
 
-        # --target pins the release to this exact commit, so the tag lands
-        # here when it is published even if main has moved on since.
+        # --target pins the release to the commit that was built, so the tag
+        # lands there when it is published even if main has moved on since.
         url=$(gh release create "$TAG" \
           --draft \
           --title "$TAG" \
           --notes-file Changelog.md \
-          --target "$GITHUB_SHA")
+          --target "$SHA")
         echo "url=$url" >> "$GITHUB_OUTPUT"
 
         if [ -d "$ARTIFACT_PATH" ] && [ -n "$(ls -A "$ARTIFACT_PATH" 2>/dev/null)" ]; then

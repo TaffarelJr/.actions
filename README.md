@@ -91,6 +91,13 @@ The release is always a draft: nothing is public until a human opens
 it and presses Publish. `copilot-pat` is optional — without it the
 notes keep a placeholder instead of a generated summary.
 
+By default the draft is for the commit the workflow runs from.
+Pass `version` to release an earlier build instead:
+the CI run that produced it is found by the version it recorded,
+so its artifact must still exist, and there is no fallback.
+It must also be newer than the last release,
+since the notes run from that tag to the commit that built it.
+
 ### fetch-release-artifacts
 
 Finds the CI run that built this exact commit and downloads its artifacts,
@@ -109,6 +116,11 @@ A missing run, an expired artifact or a missing `version.txt`
 all report through the outputs,
 because a release workflow wants to decide for itself
 whether to fall back or stop.
+
+Pass `version` to find the run that built a particular version instead.
+The recent successful runs on the current branch are searched newest first,
+`search-depth` deep, reading each artifact's `version.txt`;
+`sha` reports which commit the match was built from.
 
 ### move-version-aliases
 
