@@ -37,33 +37,16 @@ It reads git history only, so it is not specific to any language.
   with:
     fetch-depth: 0 # GitVersion needs all the history and tags
 
-<<<<<<< HEAD
 - id: version
   uses: TaffarelJr/.actions/version@v1
-=======
-Shared composite actions live in the separate
-[TaffarelJr/.actions][actionsRepo] repo, not under `.github/` here — each
-workflow below marked *via* is a thin trigger that calls one.
->>>>>>> template/main
 
 - run: echo "Building ${{ steps.version.outputs.semVer }}"
 ```
 
-<<<<<<< HEAD
 Most outputs forward GitVersion's own. The exception is `tag`,
 which encodes the tag convention — `v` plus the version —
 so no workflow has to build that string itself
 and none of them can disagree about it.
-=======
-| Workflow                                                                           | Description                                                                              |
-| :---------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------- |
-| 📁[.github/][githubFolder]                                                         |                                                                                           |
-| &nbsp;└─📁[workflows/][workflowFolder]                                             |                                                                                           |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─📄[Continuous Integration][ciWorkflow] | Runs the [scaffolding scripts'][scriptsFile] tests on both platforms                     |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─📄[Draft Release][draftWorkflow]       | Entry point for [cutting a release][releaseFile], via [TaffarelJr/.actions][actionsRepo] |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─📄[Template Sync][syncWorkflow]        | Brings changes from a template repo, via [TaffarelJr/.actions][actionsRepo]              |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─📄[Validate Codecov][codecovWorkflow]  | Checks `codecov.yml` against Codecov's validator, via [TaffarelJr/.actions][actionsRepo] |
->>>>>>> template/main
 
 Set `summary: false` where the version is only a fallback,
 so the job summary does not announce a number that was not used.
@@ -183,43 +166,6 @@ To report a vulnerability, see [SECURITY.md][securityFile].
 
 <!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
-<<<<<<< HEAD
-=======
-[claudeFolder]: ./.claude/
-[claudeFile]: ./.claude/CLAUDE.md
-[githubFolder]: ./.github/
-[ghAgentsFolder]: ./.github/agents/
-[instructionsFolder]: ./.github/instructions/
-[issueFormsFolder]: ./.github/ISSUE_TEMPLATE/
-[issueChooserFile]: ./.github/ISSUE_TEMPLATE/config.yml
-[workflowFolder]: ./.github/workflows/
-[ciWorkflow]: ./.github/workflows/continuous-integration.yml
-[draftWorkflow]: ./.github/workflows/draft-release.yml
-[syncWorkflow]: ./.github/workflows/template-sync.yml
-[codecovWorkflow]: ./.github/workflows/validate-codecov.yml
-[codeOwnFile]: ./.github/CODEOWNERS
-[codecovFile]: ./.github/codecov.yml
-[copilotFile]: ./.github/copilot-instructions.md
-[dependabotFile]: ./.github/dependabot.yml
-[fundingFile]: ./.github/FUNDING.yml
-[prTemplateFile]: ./.github/pull_request_template.md
-[settingsFile]: ./.github/settings.yml
-[vsCodeFolder]: ./.vscode/
-[docsFolder]: ./docs/
-[aiFile]: ./docs/AiInstructions.md
-[chainFile]: ./docs/TemplateChain.md
-[releaseFile]: ./docs/ReleaseProcess.md
-[styleguideFile]: ./docs/Styleguide.md
-[styleguideFile-commit]: ./docs/Styleguide.md#commit-messages
-[scriptsFolder]: ./scripts/
-[scriptsFile]: ./scripts/README.md
-
-[editorConfigFile]: ./.editorconfig
-[gitAttributesFile]: ./.gitattributes
-[gitIgnoreFile]: ./.gitignore
-[gitMessageFile]: ./.gitmessage
-[agentsFile]: ./AGENTS.md
->>>>>>> template/main
 [cocFile]: ./CODE_OF_CONDUCT.md
 [contribFile]: ./CONTRIBUTING.md
 [licenseFile]: ./LICENSE

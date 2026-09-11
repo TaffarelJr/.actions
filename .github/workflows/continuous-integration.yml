@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-<<<<<<< HEAD
 # Exercises the actions in this repo from the working tree.
 #
 # Every other repo pins '@v1', and so does this repo's own release workflow -
@@ -12,17 +11,10 @@
 # template-sync is not exercised here. It pushes a branch and opens a pull
 # request, so a self-test would either be destructive or need so much mocking
 # that it would stop testing the real thing.
-=======
-# Runs the scaffolding scripts' own tests, on both platforms they run on -
-# line endings normalise differently on each. The runner discovers every
-# *.Tests.ps1 itself, so this file lists nothing and stays identical at every
-# template layer. A leaf has no scripts/, so this is a clean no-op there.
->>>>>>> template/main
 
 name: Continuous Integration
 
 on:
-<<<<<<< HEAD
   push:
     branches: [main]
   pull_request:
@@ -41,38 +33,11 @@ jobs:
     permissions:
       contents: read # Needed to check out the repo
       actions: read # Needed by release-artifacts to look for CI runs
-=======
-  pull_request:
-    paths:
-      - scripts/**
-      - .github/workflows/continuous-integration.yml
-
-  # Can be triggered manually
-  workflow_dispatch:
-
-# A newer push to the same branch supersedes a run still in progress.
-concurrency:
-  group: continuous-integration-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  test:
-    name: Test on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-
-    permissions:
-      contents: read # Needed to check out the repo
->>>>>>> template/main
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7
         with:
-<<<<<<< HEAD
           fetch-depth: 0 # version and changelog both need the history and tags
 
       - name: version
@@ -163,17 +128,3 @@ jobs:
             echo "- \`release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
             echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
           } >> "$GITHUB_STEP_SUMMARY"
-=======
-          fetch-depth: 1 # The scripts under test need no history
-
-      - name: Run the script tests
-        shell: pwsh
-        run: |
-          $runner = './scripts/tests/Run-Tests.ps1'
-          if (-not (Test-Path $runner)) {
-            Write-Host 'No scripts/ folder in this repo - nothing to test'
-            exit 0
-          }
-
-          & $runner -ShowOutput
->>>>>>> template/main
