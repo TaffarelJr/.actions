@@ -10,7 +10,7 @@
 # from the commits since the last version tag, so a shallow clone silently
 # produces the wrong range.
 
-name: Changelog
+name: Build Changelog
 description: Builds release notes and a changelog from the git history.
 
 inputs:

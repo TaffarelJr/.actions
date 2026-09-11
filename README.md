@@ -5,10 +5,11 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 #### Table of Contents <!-- omit from toc -->
 
 - [Getting Started](#getting-started)
-  - [version](#version)
-  - [changelog](#changelog)
+  - [build-changelog](#build-changelog)
+  - [calculate-version](#calculate-version)
+  - [draft-release](#draft-release)
+  - [fetch-release-artifacts](#fetch-release-artifacts)
   - [move-version-aliases](#move-version-aliases)
-  - [release-artifacts](#release-artifacts)
   - [template-sync](#template-sync)
   - [validate-codecov](#validate-codecov)
 - [Versioning](#versioning)
@@ -21,13 +22,32 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 Reference an action by its folder, pinned to a major version:
 
 ```yaml
-- uses: TaffarelJr/.actions/version@v1
+- uses: TaffarelJr/.actions/calculate-version@v1
 ```
 
 Each one is a composite action, so it runs inside the calling job
 rather than costing a whole extra runner.
 
-### version
+### build-changelog
+
+Builds release notes and a changelog from the git history,
+covering everything since the last version tag.
+
+```yaml
+- uses: TaffarelJr/.actions/build-changelog@v1
+  with:
+    version: ${{ steps.version.outputs.semVer }}
+```
+
+The notes lead with a prose summary and fold the full commit list
+beneath it. Pass `summary-path` to supply that prose;
+without it a placeholder HTML comment is written instead,
+which stays invisible if the release is published unfilled.
+
+The script and its module travel with the action,
+so the calling repo needs nothing of its own.
+
+### calculate-version
 
 Calculates the SemVer version for the current commit,
 using [GitVersion][gitVersion] and the repo's own `GitVersion.yml`.
@@ -39,7 +59,7 @@ It reads git history only, so it is not specific to any language.
     fetch-depth: 0 # GitVersion needs all the history and tags
 
 - id: version
-  uses: TaffarelJr/.actions/version@v1
+  uses: TaffarelJr/.actions/calculate-version@v1
 
 - run: echo "Building ${{ steps.version.outputs.semVer }}"
 ```
@@ -52,24 +72,43 @@ and none of them can disagree about it.
 Set `summary: false` where the version is only a fallback,
 so the job summary does not announce a number that was not used.
 
-### changelog
+### draft-release
 
-Builds release notes and a changelog from the git history,
-covering everything since the last version tag.
+Finds the CI run for this exact commit, drafts a GitHub Release from
+it, and attaches whatever that run built.
 
 ```yaml
-- uses: TaffarelJr/.actions/changelog@v1
+- uses: actions/checkout@v7
   with:
-    version: ${{ steps.version.outputs.semVer }}
+    fetch-depth: 0 # the changelog needs all the history and tags
+
+- uses: TaffarelJr/.actions/draft-release@v1
+  with:
+    copilot-pat: ${{ secrets.COPILOT_PAT }}
 ```
 
-The notes lead with a prose summary and fold the full commit list
-beneath it. Pass `summary-path` to supply that prose;
-without it a placeholder HTML comment is written instead,
-which stays invisible if the release is published unfilled.
+The release is always a draft: nothing is public until a human opens
+it and presses Publish. `copilot-pat` is optional — without it the
+notes keep a placeholder instead of a generated summary.
 
-The script and its module travel with the action,
-so the calling repo needs nothing of its own.
+### fetch-release-artifacts
+
+Finds the CI run that built this exact commit and downloads its artifacts,
+so a release ships bit-for-bit what was tested instead of rebuilding.
+
+```yaml
+- id: artifacts
+  uses: TaffarelJr/.actions/fetch-release-artifacts@v1
+
+- if: steps.artifacts.outputs.found == 'true'
+  run: echo "Shipping ${{ steps.artifacts.outputs.version }}"
+```
+
+Nothing here fails the caller.
+A missing run, an expired artifact or a missing `version.txt`
+all report through the outputs,
+because a release workflow wants to decide for itself
+whether to fall back or stop.
 
 ### move-version-aliases
 
@@ -85,25 +124,6 @@ See [Versioning](#versioning) for why these tags exist.
 so a `release: published` trigger needs nothing else.
 Pass it explicitly for a `workflow_dispatch` re-run, or to move the
 aliases to some other tag by hand.
-
-### release-artifacts
-
-Finds the CI run that built this exact commit and downloads its artifacts,
-so a release ships bit-for-bit what was tested instead of rebuilding.
-
-```yaml
-- id: artifacts
-  uses: TaffarelJr/.actions/release-artifacts@v1
-
-- if: steps.artifacts.outputs.found == 'true'
-  run: echo "Shipping ${{ steps.artifacts.outputs.version }}"
-```
-
-Nothing here fails the caller.
-A missing run, an expired artifact or a missing `version.txt`
-all report through the outputs,
-because a release workflow wants to decide for itself
-whether to fall back or stop.
 
 ### template-sync
 

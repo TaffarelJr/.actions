@@ -32,19 +32,19 @@ jobs:
 
     permissions:
       contents: read # Needed to check out the repo
-      actions: read # Needed by release-artifacts to look for CI runs
+      actions: read # Needed by fetch-release-artifacts to look for CI runs
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # version and changelog both need the history and tags
+          fetch-depth: 0 # calculate-version and build-changelog both need the history and tags
 
-      - name: version
+      - name: calculate-version
         id: version
-        uses: ./version
+        uses: ./calculate-version
 
-      - name: Assert version produced a SemVer
+      - name: Assert calculate-version produced a SemVer
         shell: bash
         env:
           SEMVER: ${{ steps.version.outputs.semVer }}
@@ -58,15 +58,15 @@ jobs:
             echo "::error::tag was '${TAG}', expected 'v${SEMVER}'."
             exit 1
           fi
-          echo "version -> ${SEMVER} / ${TAG}"
+          echo "calculate-version -> ${SEMVER} / ${TAG}"
 
-      - name: changelog
-        uses: ./changelog
+      - name: build-changelog
+        uses: ./build-changelog
         with:
           version: ${{ steps.version.outputs.semVer }}
           output-path: Changelog.md
 
-      - name: Assert the changelog has both documents
+      - name: Assert build-changelog produced both documents
         shell: bash
         run: |
           test -s Changelog.md \
@@ -75,16 +75,16 @@ jobs:
             || { echo "::error::No folded changelog section."; exit 1; }
           grep -q '<!--' Changelog.md \
             || { echo "::error::No summary placeholder."; exit 1; }
-          echo "changelog -> $(wc -l < Changelog.md) lines"
+          echo "build-changelog -> $(wc -l < Changelog.md) lines"
 
       # No CI run has published a 'packages' artifact for this repo, so the
       # expected answer is a clean "found nothing" rather than a failure -
       # which is the behaviour a release workflow depends on.
-      - name: release-artifacts
+      - name: fetch-release-artifacts
         id: artifacts
-        uses: ./release-artifacts
+        uses: ./fetch-release-artifacts
 
-      - name: Assert release-artifacts reported rather than failed
+      - name: Assert fetch-release-artifacts reported rather than failed
         shell: bash
         env:
           FOUND: ${{ steps.artifacts.outputs.found }}
@@ -94,7 +94,7 @@ jobs:
             echo "::error::found was '${FOUND}', expected true or false."
             exit 1
           fi
-          echo "release-artifacts -> found=${FOUND} version='${VERSION}'"
+          echo "fetch-release-artifacts -> found=${FOUND} version='${VERSION}'"
 
       # This repo carries the inherited codecov.yml, so the validator should
       # accept it. A failure here is either a real typo in that file or a
@@ -123,8 +123,8 @@ jobs:
           {
             echo "### Actions exercised"
             echo
-            echo "- \`version\` → \`${SEMVER}\`"
-            echo "- \`changelog\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
-            echo "- \`release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
+            echo "- \`calculate-version\` → \`${SEMVER}\`"
+            echo "- \`build-changelog\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
+            echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
             echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
           } >> "$GITHUB_STEP_SUMMARY"
