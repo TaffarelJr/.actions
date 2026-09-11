@@ -2,20 +2,15 @@
 
 # Brings the parent template's changes down as a pull request.
 #
-# This file is a shell: the triggers are this repo's, and the steps live in the
-# shared action. A workflow's triggers cannot be inherited from elsewhere,
-# which is why the shell has to be local even though the work is not.
-#
-# It holds no per-repo values, so it stays identical at every layer and a
-# parent's edit to it always applies cleanly. Which parent to sync from, and
-# how, are repo variables set when the repo is scaffolded:
+# A shell: triggers can't be inherited, so this file is local even though the
+# steps live in the shared action and stay identical at every layer. Which
+# parent to sync from, and how, are repo variables set at scaffold time:
 #
 #   TEMPLATE_REPO_URL        the immediate parent's clone URL
 #   TEMPLATE_SYNC_STRATEGY   'rebase' for a template layer, 'merge' for a leaf
 #
-# A base template has no parent, so it sets neither variable and every run is
-# a no-op that says as much. A URL that IS set but points at this repo is a
-# misconfiguration, and fails loudly.
+# A base template sets neither, so every run is a clean no-op. A URL pointing
+# at this repo is a misconfiguration and fails loudly.
 
 name: Template Sync
 

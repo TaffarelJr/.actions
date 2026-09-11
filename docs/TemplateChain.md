@@ -183,7 +183,7 @@ so a file usually announces which one it is.
 ### Verbatim
 
 The shared machinery: the scaffolding scripts, the modules they share and
-their tests, the version and release workflows, and the version configuration
+their tests, the release workflow, and the version configuration
 itself. A per-layer edit to any of them conflicts on every future change,
 forever.
 
@@ -234,12 +234,18 @@ Resolve by taking the incoming structure and re-applying the local keys.
 
 - **Repo settings — this repo.** It declares only its own deltas;
   the rest is inherited through `_extends` at runtime, not through the file.
-- **The CI workflow — this layer.** It is where a toolchain lives,
-  so each layer that builds something owns its own.
-- **The template sync and test workflows — the template.** Neither carries a
-  per-repo value: which parent to sync from, and how, are repo variables,
-  and the test runner discovers its own files.
-  So both are identical at every layer, and cannot conflict.
+- **The CI workflow — the template, until a layer builds something.**
+  The base's runs the scaffolding scripts' tests, and the runner discovers
+  each layer's own test files, so a template layer runs it verbatim.
+  A leaf has no scripts: scaffolding deletes the workflow along with them,
+  and the leaf writes its own — which is where its toolchain lives.
+- **The publish workflow — this layer.** What happens when a release is
+  published is the layer's own business, so a layer with something to do
+  at that moment carries its own `publish-release.yml`,
+  and one with nothing to do has none.
+- **The template sync workflow — the template.** It carries no per-repo
+  value: which parent to sync from, and how, are repo variables.
+  So it is identical at every layer, and cannot conflict.
 - **The README — split.** A template owns its diagram highlight and its own
   file tables — each layer lists what it adds, since a template's included
   files rarely change, so a hand-maintained table stays accurate. The base

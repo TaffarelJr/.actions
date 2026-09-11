@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# The entry point for cutting a release: Actions -> Draft Release -> Run.
+# See docs/ReleaseProcess.md for why this is the only way in and why a
+# release is a deliberate decision, not something every merge does.
+#
+# Nothing is rebuilt here - it just triggers; draft-release takes the
+# artifacts CI already produced, for this commit or for a named version.
+#
+# 'uses' can't take an expression, so bumping the major version is an edit
+# here that flows down the template chain like any other change.
+
+name: Draft Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release an earlier build instead of this commit's, e.g. 1.4.2 or v1.4.2
+        required: false
+
+# Two releases drafted at once would race over the same tag.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Draft from the CI run
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Needed to create the release
+      actions: read # Needed to read artifacts from the CI run
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # The changelog needs all the history and tags
+
+      - name: Draft the release
+        uses: TaffarelJr/.actions/draft-release@v1
+        with:
+          version: ${{ inputs.version }}
+          copilot-pat: ${{ secrets.COPILOT_PAT }}
