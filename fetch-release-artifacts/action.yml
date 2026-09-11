@@ -1,14 +1,15 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 
-# Finds the CI run that built this exact commit and takes its artifacts,
-# so a release ships bit-for-bit what was tested instead of rebuilding.
+# Finds the CI run that built this exact commit - or, given a version, the
+# run that built that version - and takes its artifacts, so a release ships
+# bit-for-bit what was tested instead of rebuilding.
 #
 # Nothing here fails the caller. A missing run, an expired artifact or a
 # missing version.txt all report through the outputs, because a release
 # workflow wants to decide for itself whether to fall back or stop.
 
 name: Fetch Release Artifacts
-description: Downloads the artifacts built by the CI run for this commit.
+description: Downloads the artifacts built by the CI run for this commit, or for a given version.
 
 inputs:
   build-workflow:
@@ -19,6 +20,17 @@ inputs:
     description: Artifact holding the built output and version.txt.
     required: false
     default: packages
+  version:
+    description: >-
+      Release this earlier build instead of this commit's, e.g. 1.4.2 or
+      v1.4.2. The run that built it is found by the version it recorded, so
+      its artifact must still exist.
+    required: false
+    default: ""
+  search-depth:
+    description: How many recent successful runs to search for that version.
+    required: false
+    default: "50"
   path:
     description: Directory to download the artifact into.
     required: false
@@ -41,6 +53,9 @@ outputs:
   run-id:
     description: The CI run the artifacts came from, or empty.
     value: ${{ steps.locate.outputs.run-id }}
+  sha:
+    description: The commit that run built, or empty.
+    value: ${{ steps.locate.outputs.sha }}
   version:
     description: >-
       The version recorded by that build, or empty when there was no
@@ -53,31 +68,68 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Locate the CI run for this commit
+    - name: Locate the CI run to release
       id: locate
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
         WORKFLOW: ${{ inputs.build-workflow }}
+        ARTIFACT: ${{ inputs.artifact-name }}
+        VERSION_FILE: ${{ inputs.version-file }}
+        VERSION: ${{ inputs.version }}
+        DEPTH: ${{ inputs.search-depth }}
       run: |
-        # The newest successful run for this exact commit. Anything older is
-        # a different tree; anything unsuccessful was never verified.
-        run_id=$(gh run list \
-          --workflow "$WORKFLOW" \
-          --commit "$GITHUB_SHA" \
-          --status success \
-          --limit 1 \
-          --json databaseId \
-          --jq '.[0].databaseId // empty')
+        version="${VERSION#v}"
+        run_id="" sha=""
+
+        if [ -z "$version" ]; then
+          # The newest successful run for this exact commit. Anything older
+          # is a different tree; anything unsuccessful was never verified.
+          read -r run_id sha < <(gh run list \
+            --workflow "$WORKFLOW" \
+            --commit "$GITHUB_SHA" \
+            --status success \
+            --limit 1 \
+            --json databaseId,headSha \
+            --jq '.[0] // empty | "\(.databaseId) \(.headSha)"') || true
+          wanted="$GITHUB_SHA"
+        else
+          # Only the artifact records which version a run built, so walk the
+          # recent successful runs on this branch, newest first, reading each
+          # one's until it matches. A run whose artifact has expired could not
+          # be released anyway, so it is skipped rather than fatal.
+          while read -r id candidate; do
+            dir=$(mktemp -d)
+            if gh run download "$id" --name "$ARTIFACT" --dir "$dir" >/dev/null 2>&1; then
+              built=$(tr -d '[:space:]' < "$dir/$VERSION_FILE" 2>/dev/null || true)
+              if [ "$built" = "$version" ]; then
+                run_id="$id" sha="$candidate"
+              fi
+            else
+              echo "::notice::Run $id no longer has a '$ARTIFACT' artifact; skipped."
+            fi
+            rm -rf "$dir"
+            if [ -n "$run_id" ]; then break; fi
+          done < <(gh run list \
+            --workflow "$WORKFLOW" \
+            --branch "$GITHUB_REF_NAME" \
+            --status success \
+            --limit "$DEPTH" \
+            --json databaseId,headSha \
+            --jq '.[] | "\(.databaseId) \(.headSha)"')
+          wanted="version $version"
+        fi
 
         if [ -z "$run_id" ]; then
-          echo "::warning::No successful '$WORKFLOW' run for $GITHUB_SHA."
+          echo "::warning::No successful '$WORKFLOW' run found for $wanted."
           echo "found=false" >> "$GITHUB_OUTPUT"
           echo "run-id=" >> "$GITHUB_OUTPUT"
+          echo "sha=" >> "$GITHUB_OUTPUT"
         else
-          echo "Releasing the output of run $run_id"
+          echo "Releasing the output of run $run_id, built from $sha"
           echo "found=true" >> "$GITHUB_OUTPUT"
           echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Download the built artifacts
