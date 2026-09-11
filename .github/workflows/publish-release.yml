@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# Runs when a release is published. Every repo in the chain that has anything
+# to do at that moment carries a workflow under this name; what "publishing"
+# means is the repo's own business. Here it means moving the version
+# aliases; a package repo would push to its feed instead.
+
+name: Publish Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to move the aliases to (e.g. v1.4.2)
+        required: true
+
+permissions:
+  contents: write # Needed to move the alias tags
+
+jobs:
+  publish:
+    name: Repoint the major and minor aliases
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Move the aliases
+        uses: TaffarelJr/.actions/move-version-aliases@v1
+        with:
+          tag: ${{ inputs.tag }}
