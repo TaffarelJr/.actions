@@ -1,18 +1,11 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-# Checks codecov.yml against Codecov's own validator.
+# Checks codecov.yml against Codecov's own validator - it silently falls back
+# to defaults on a parse failure, so a typo would otherwise just quietly stop
+# enforcing thresholds with no error anywhere.
 #
-# Codecov silently falls back to its defaults when codecov.yml does not parse,
-# so a typo does not fail anything - it just quietly stops enforcing the
-# thresholds. The pull request that changes the file is the only moment the
-# mistake is cheap to fix.
-#
-# This file is a shell: the triggers are this repo's, and the steps live in the
-# shared action. A workflow's triggers cannot be inherited from elsewhere,
-# which is why the shell has to be local even though the work is not.
-#
-# It holds no per-repo values, so it stays identical at every layer and a
-# parent's edit to it always applies cleanly.
+# A shell: triggers can't be inherited, so this file is local even though the
+# check lives in the shared action and stays identical at every layer.
 
 name: Validate Codecov
 

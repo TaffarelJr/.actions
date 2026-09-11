@@ -42,10 +42,14 @@ own customizations or drifts from its template.
   edit was the mistake; move it into a `New-Repo-<NN>-<slug>.psm1` instead.
 - **`.github/settings.yml` — this repo.** It declares only its own deltas.
   The rest is inherited through `_extends` at runtime, not through the file.
-- **`.github/workflows/template-sync.yml` and `test-scripts.yml` — the
-  template, always.** They carry no per-repo values: `TEMPLATE_REPO_URL` and
-  `TEMPLATE_SYNC_STRATEGY` are repo variables, and the test runner discovers
-  its files, so neither can legitimately differ from the parent's.
+- **`.github/workflows/template-sync.yml` — the template, always.** It carries
+  no per-repo values: `TEMPLATE_REPO_URL` and `TEMPLATE_SYNC_STRATEGY` are
+  repo variables, so it cannot legitimately differ from the parent's.
+- **`.github/workflows/continuous-integration.yml` — the template in a
+  template layer, the leaf in a leaf.** The test runner discovers its files,
+  so a template layer's copy cannot legitimately differ from the parent's.
+  A leaf has no `scripts/` — scaffolding deleted the template's workflow
+  with them — so the one it carries is its own; keep it.
 - **`README.md` — split.** This repo owns the diagram highlight and its own
   tables; the template owns the shared structure.
 - **`LICENSE` — this repo**, if it is private and carries the proprietary
