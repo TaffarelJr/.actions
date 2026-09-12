@@ -89,7 +89,7 @@ Write-Line "Version : $Version"
 Write-Line "From    : $from"
 Write-Line "To      : $($headSha.Substring(0, 7))"
 
-$commits = @(Get-ChangelogCommit -StartSha $baseline.Sha -EndSha $headSha)
+$commits = Get-ChangelogCommit -StartSha $baseline.Sha -EndSha $headSha
 Write-Line "Commits : $($commits.Count)"
 
 $summary = ''

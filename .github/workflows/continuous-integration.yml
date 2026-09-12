@@ -145,6 +145,7 @@ jobs:
             echo
             echo "- \`calculate-version\` → \`${SEMVER}\`"
             echo "- \`build-changelog\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
-            echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}, by version found=${{ steps.by-version.outputs.found }}"
+            echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
+            echo "- \`fetch-release-artifacts\` (by version) → found=${{ steps.by-version.outputs.found }}"
             echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -74,6 +74,11 @@ function Get-VersionTag {
         also accepts 'v1' and 'v1.2', which would otherwise let the floating
         major/minor alias tags masquerade as releases and pick the wrong
         baseline.
+
+        No leading comma on the return, unlike this repo's usual array-safe
+        convention - every caller pipes this into Where-Object for per-tag
+        filtering, and a comma-wrapped array arrives there as one object
+        instead of enumerating, breaking .Tag/.Sha access on it entirely.
     #>
     $tags = @(git tag --list 'v*') | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
 
@@ -165,7 +170,7 @@ function Get-ChangelogCommit {
     $format = "%H$($script:FieldDelimiter)%s$($script:FieldDelimiter)%b$($script:CommitDelimiter)"
     $range = if ($StartSha) { "$StartSha..$EndSha" } else { $EndSha }
     $raw = git log --reverse $range --format=$format
-    if (-not $raw) { return @() }
+    if (-not $raw) { return , @() }
 
     $records = ($raw -join "`n") -split $script:CommitDelimiter
 
@@ -181,7 +186,7 @@ function Get-ChangelogCommit {
             })
 
     # A merge commit restates what its own commits already say.
-    return @($commits | Where-Object { -not $_.IsMerge })
+    return , @($commits | Where-Object { -not $_.IsMerge })
 }
 
 function ConvertTo-ParsedCommit {

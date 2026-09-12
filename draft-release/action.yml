@@ -185,7 +185,7 @@ runs:
     - name: Install the Copilot CLI
       shell: bash
       continue-on-error: true
-      run: npm install -g @github/copilot
+      run: npm install -g @github/copilot@1.0.83
 
     - name: Summarize the changelog
       id: summary
