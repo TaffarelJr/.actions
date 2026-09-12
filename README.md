@@ -28,6 +28,13 @@ Reference an action by its folder, pinned to a major version:
 Each one is a composite action, so it runs inside the calling job
 rather than costing a whole extra runner.
 
+`build-workflow` and `artifact-name` both default to `Continuous Integration`
+and `packages` — the convention every repo's own CI is expected to follow so
+`draft-release` and `fetch-release-artifacts` need no configuration to find
+what it built. Override both together if a repo names either differently;
+`draft-release` only relays them to `fetch-release-artifacts`, it does not
+invent its own defaults.
+
 ### build-changelog
 
 Builds release notes and a changelog from the git history,
@@ -208,6 +215,14 @@ while released versions stay fixed. Two kinds of tag do that:
 Immutability applies to release-backed tags,
 which is why the moving ones are deliberately kept out of releases.
 Publishing a release moves both automatically; nothing to do by hand.
+
+Every tag here is `v` plus a bare version number, and several actions strip
+or rebuild that prefix independently — `calculate-version`'s own `tag`
+output, `draft-release`'s and `fetch-release-artifacts`'s `version` input,
+and `move-version-aliases`'s `tag` input all start from a different kind of
+string, so there is no single place to normalize it once. If the convention
+itself ever changes, grep for `#v` across this repo's `action.yml` files
+rather than assuming one of them owns it.
 
 ## Contributing
 

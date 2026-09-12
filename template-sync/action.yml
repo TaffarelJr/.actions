@@ -64,8 +64,9 @@ outputs:
     value: ${{ steps.build.outputs.conflict }}
   deleted:
     description: >-
-      Paths the parent edited that this repo had already deleted, kept deleted
-      rather than raised as a conflict.
+      Paths kept out of this repo rather than landing from the sync: ones the
+      parent edited that this repo had already deleted, and a scripts/ the
+      parent added where this repo - a leaf - carries none of its own.
     value: ${{ steps.build.outputs.deleted }}
   missing:
     description: How many patches the parent held that this repo did not.
@@ -188,6 +189,14 @@ runs:
         : > /tmp/conflicts.txt
         : > /tmp/deleted.txt
 
+        # A leaf has no scripts/ of its own. Captured before the merge/rebase
+        # runs, so a new file the parent adds there can be told apart from
+        # one this repo already had.
+        had_scripts=false
+        if git cat-file -e "${base}:scripts" 2>/dev/null; then
+          had_scripts=true
+        fi
+
         # A file this repo deliberately deleted, which the parent has since
         # edited, conflicts on every single sync. The repo's answer is already
         # on record - it is not in the base branch - so honour that instead of
@@ -239,6 +248,17 @@ runs:
           fi
         fi
 
+        # A file added under scripts/ merges in cleanly - resolve_deletions
+        # never sees it, because nothing conflicted. Swept up here instead,
+        # the same way a conflicted deletion already is, so "a leaf has no
+        # scripts/" stays true without a human having to notice the add.
+        if [[ "${had_scripts}" == "false" && -d scripts ]]; then
+          git rm -rq -- scripts
+          echo "scripts/" >> /tmp/deleted.txt
+          git add -A
+          git -c core.editor=true commit --amend --no-edit
+        fi
+
         echo "conflict=${conflict}" >> "$GITHUB_OUTPUT"
 
         deleted=$(sort -u /tmp/deleted.txt | sed '/^$/d' | tr '\n' ' ')
@@ -274,7 +294,8 @@ runs:
       run: |
         title="Merge changes from template repo"
         if [[ "${CONFLICT}" == "true" ]]; then
-          note="⚠️ **Conflicts were committed as-is and must be resolved before merging.** See the job log for the file list."
+          note="⚠️ **Conflicts were committed as-is and must be resolved"
+          note+=" before merging.** See the job log for the file list."
         else
           note="✅ Applied cleanly."
         fi
