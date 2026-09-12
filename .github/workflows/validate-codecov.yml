@@ -14,7 +14,6 @@ on:
     paths:
       - .github/codecov.yml
 
-  # Can be triggered manually
   workflow_dispatch:
 
 jobs:

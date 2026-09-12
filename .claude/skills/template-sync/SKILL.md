@@ -3,8 +3,8 @@ name: template-sync
 description: >-
   Reviews and resolves a Template Sync pull request - the automated merge that
   brings changes down from this repo's parent template. Use when a
-  "Merge changes from template repo" PR appears, when one is marked NEEDS
-  RESOLUTION, or when asked why a sync is failing.
+  "Merge changes from template repo" PR appears, when one carries the
+  "needs fix" label, or when asked why a sync is failing.
 when_to_use: >-
   Trigger phrases: template sync PR, sync from the template, needs resolution,
   why did the template sync fail.
@@ -28,7 +28,7 @@ different responses:
   something odd happened — investigate rather than merge.
 - **Genuine upstream changes.** The parent improved something. This is the
   normal case.
-- **Conflicts** — the PR title starts `NEEDS RESOLUTION`. The workflow pushed
+- **Conflicts** — the PR carries the `needs fix` label. The workflow pushed
   the branch with conflict markers still in it.
 
 ## 2. Resolve conflicts by asking who owns the file
@@ -75,6 +75,9 @@ disagree, that one wins.
   own module and its tests:
   `git diff template/main -- scripts ':(exclude)scripts/New-Repo-[0-9]*' ':(exclude)scripts/tests/New-Repo-[0-9]*'`
   should be empty.
+- If the PR carried `needs fix`, remove it: `gh pr edit <n> --remove-label
+  'needs fix'`. The workflow only clears it on its own next run, so a PR
+  resolved by hand keeps a stale label otherwise.
 
 ## 4. Merge, then check the next layer
 
