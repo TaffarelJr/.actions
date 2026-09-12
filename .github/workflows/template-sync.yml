@@ -11,13 +11,6 @@
 #
 # A base template sets neither, so every run is a clean no-op. A URL pointing
 # at this repo is a misconfiguration and fails loudly.
-#
-# This repo is also where the action's own source lives, so it uses './'
-# rather than the published '@v1' everyone else pins - otherwise a fix to
-# the action would not run against itself until released, and it already
-# ran a stale pre-fix copy of itself once. This is a deliberate, permanent
-# divergence from the template's copy of this file; resolve_deletions()
-# in template-sync/action.yml keeps it that way on every future sync.
 
 name: Template Sync
 
@@ -59,7 +52,7 @@ jobs:
           token: ${{ env.SYNC_TOKEN }}
 
       - name: Sync from the parent template
-        uses: ./template-sync
+        uses: TaffarelJr/.actions/template-sync@v1
         with:
           template-url: ${{ vars.TEMPLATE_REPO_URL }}
           strategy: ${{ vars.TEMPLATE_SYNC_STRATEGY }}

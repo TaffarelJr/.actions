@@ -205,16 +205,9 @@ runs:
 
         # This repo's own version of these always wins, because the answer
         # never changes between syncs: settings.yml is a genuinely different
-        # document per repo, README.md is split by design, and this repo's
-        # own template-sync.yml deliberately points at './template-sync'
-        # instead of the published '@v1' - it hosts the action's source, so
-        # it must never run a stale, pre-fix copy of itself. Asking a human
-        # the same question every single sync gets nothing in any of these.
-        KEEP_OURS=(
-          'README.md'
-          '.github/settings.yml'
-          '.github/workflows/template-sync.yml'
-        )
+        # document per repo, and README.md is split by design. Asking a
+        # human the same question every single sync gets nothing.
+        KEEP_OURS=('README.md' '.github/settings.yml')
 
         # Needed to tell a real rename on the parent's side apart from a
         # coincidence: the point in history the two sides last agreed on.
