@@ -51,15 +51,15 @@ from the [Remark][remark] repo.
 [cocFile]: ./CODE_OF_CONDUCT.md
 [contribFile]: ./CONTRIBUTING.md
 
-<!-- GitHub Repo URIs (alphabetical) -->
+<!-- GitHub URIs (alphabetical) -->
 
 [ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
 [ghIssues]: https://github.com/TaffarelJr/.actions/issues
 [ghWiki]: https://github.com/TaffarelJr/.actions/wiki
+[remark]: https://github.com/remarkjs/.github/blob/main/support.md
 
 <!-- Public URIs (alphabetical) -->
 
 [codeSandbox]: https://codesandbox.io
-[remark]: https://github.com/remarkjs/.github/blob/main/support.md
 [rubberDuck]: https://rubberduckdebugging.com
 [xyProblem]: https://meta.stackexchange.com/questions/66377/what-is-the-xy-problem/66378#66378
