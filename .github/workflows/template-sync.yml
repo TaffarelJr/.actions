@@ -21,7 +21,6 @@ on:
   schedule:
     - cron: "17 4 * * *"
 
-  # Can be triggered manually
   workflow_dispatch:
 
 # One sync at a time. A second run would fight the first over the branch.
