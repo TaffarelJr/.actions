@@ -6,9 +6,9 @@
 # of its own to generate release notes - which is what lets a leaf repo
 # delete scripts/ and still be able to cut a release.
 #
-# The caller must have checked out with fetch-depth: 0. The notes are built
-# from the commits since the last version tag, so a shallow clone silently
-# produces the wrong range.
+# Checks out its own history rather than trusting the caller to have done
+# it right. The notes are built from the commits since the last version
+# tag, so a shallow clone would silently produce the wrong range.
 
 name: Build Changelog
 description: Builds release notes and a changelog from the git history.
@@ -51,6 +51,11 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Checkout repo
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0 # The commit range needs the full history and tags
+
     - name: Write the release notes
       shell: pwsh
       env:

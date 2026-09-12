@@ -13,8 +13,9 @@
 # notes, and presses Publish. Deleting a draft leaves no trace, so a release
 # that turns out to be wrong costs nothing.
 #
-# The caller must have checked out with fetch-depth: 0 - the changelog needs
-# all the history and tags.
+# Checks out its own history rather than trusting the caller to have done it
+# right - the changelog and the already-tagged check both need the full
+# history and tags.
 
 name: Draft Release
 description: Drafts a GitHub Release from the CI artifacts built for this commit.
@@ -53,6 +54,11 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Checkout repo
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0 # The changelog and the already-tagged check both need it
+
     #─────────────────────────────────────────────────────────────────────────
     # Find the build to release
     #─────────────────────────────────────────────────────────────────────────
@@ -128,9 +134,10 @@ runs:
         # Refuse to draft over a version that has already shipped. The tag
         # is created when a release is published, so an existing one means
         # this exact version is public - and replacing it would change what
-        # a consumer already resolved. This works because the caller's
-        # checkout with fetch-depth: 0 already fetches every tag (its
-        # default refspec includes refs/tags/*) - no fetch-tags input needed.
+        # a consumer already resolved. This works because this action's own
+        # checkout with fetch-depth: 0, above, already fetches every tag
+        # (its default refspec includes refs/tags/*) - no fetch-tags input
+        # needed.
         if git rev-parse "v$version" >/dev/null 2>&1; then
           echo "::error::v$version is already tagged, so it has already" \
             "been released. Merge something, or raise next-version in" \

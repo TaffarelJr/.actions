@@ -38,7 +38,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # calculate-version and build-changelog both need the history and tags
+          fetch-depth: 1 # validate-codecov just needs the file; the others bring their own deeper checkout
 
       - name: calculate-version
         id: version

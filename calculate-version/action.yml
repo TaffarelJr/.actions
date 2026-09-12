@@ -8,9 +8,10 @@
 #
 # GitVersion reads git history and GitVersion.yml only,
 # so this action is not specific to any language.
-# The caller must have checked out with fetch-depth: 0 -
-# GitVersion needs the full history and all the tags to work out
-# where the last release was.
+# Checks out its own history rather than trusting the caller to have done
+# it right - GitVersion needs the full history and all the tags to work
+# out where the last release was, and a shallow or missing checkout would
+# fail silently rather than loudly.
 
 name: Calculate Version
 description: Calculates the SemVer version for the current commit.
@@ -81,6 +82,11 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Checkout repo
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0 # GitVersion needs the full history and all the tags
+
     - name: Install GitVersion
       # Installed as a dotnet global tool. Every GitHub-hosted runner
       # already has the .NET SDK, so no setup-dotnet step is needed -

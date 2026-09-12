@@ -65,10 +65,6 @@ using [GitVersion][gitVersion] and the repo's own `GitVersion.yml`.
 It reads git history only, so it is not specific to any language.
 
 ```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0 # GitVersion needs all the history and tags
-
 - id: version
   uses: TaffarelJr/.actions/calculate-version@v1
 
@@ -89,10 +85,6 @@ Finds the CI run for this exact commit, drafts a GitHub Release from
 it, and attaches whatever that run built.
 
 ```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0 # the changelog needs all the history and tags
-
 - uses: TaffarelJr/.actions/draft-release@v1
   with:
     copilot-pat: ${{ secrets.COPILOT_PAT }}
