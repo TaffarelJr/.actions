@@ -26,6 +26,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  self-references:
+    name: Assert self-referenced actions exist
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read # Needed to check out the repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1 # Only the working tree is needed
+
+      # v1 once pointed at a commit where a workflow or a doc example still
+      # named a folder that a rename had already moved away from - silent
+      # until something actually tried to resolve it. Every folder named by
+      # a self-reference anywhere in this repo (a workflow, an action calling
+      # another, a README example) has to exist, so that mismatch can never
+      # land unnoticed again.
+      - name: Assert every self-referenced action exists
+        shell: bash
+        run: |
+          names=$(grep -rhoE 'TaffarelJr/\.actions/[A-Za-z0-9_-]+@v[0-9]+' \
+              --include='*.yml' --include='*.yaml' --include='*.md' \
+              --exclude-dir=.git . \
+            | sed -E 's#.*/([A-Za-z0-9_-]+)@v[0-9]+#\1#' \
+            | sort -u)
+
+          missing=0
+          for name in ${names}; do
+            if [[ ! -f "${name}/action.yml" ]]; then
+              echo "::error::References TaffarelJr/.actions/${name}@v1, but ${name}/action.yml does not exist."
+              missing=1
+            fi
+          done
+
+          if [[ "${missing}" == "1" ]]; then
+            exit 1
+          fi
+          echo "Every self-referenced action exists: ${names}"
+
   actions:
     name: Exercise the actions
     runs-on: ubuntu-latest
