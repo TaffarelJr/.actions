@@ -267,17 +267,20 @@ This guide is based on the [contributing.md][contrib] website.
 [cocFile]: ./CODE_OF_CONDUCT.md
 [securityFile]: ./SECURITY.md
 
-<!-- GitHub URIs (alphabetical) -->
+<!-- GitHub In-Repo URIs (alphabetical) -->
 
 [ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
 [ghEnhancement]: https://github.com/TaffarelJr/.actions/issues/new?template=02_enhancement.yml
-[ghFork]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
 [ghIssues]: https://github.com/TaffarelJr/.actions/issues
 [ghNewBug]: https://github.com/TaffarelJr/.actions/issues/new?template=03_bug_report.yml
 [ghNewFeature]: https://github.com/TaffarelJr/.actions/issues/new?template=01_new_feature.yml
 [ghNewIssue]: https://github.com/TaffarelJr/.actions/issues/new?template=04_performance_issue.yml
-[ghStatus]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/changing-the-stage-of-a-pull-request
 [ghWiki]: https://github.com/TaffarelJr/.actions/wiki
+
+<!-- GitHub URIs (alphabetical) -->
+
+[ghFork]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
+[ghStatus]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/changing-the-stage-of-a-pull-request
 [silentcast]: https://github.com/colinkeenan/silentcast
 
 <!-- Public URIs (alphabetical) -->

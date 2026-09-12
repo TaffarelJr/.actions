@@ -51,11 +51,14 @@ from the [Remark][remark] repo.
 [cocFile]: ./CODE_OF_CONDUCT.md
 [contribFile]: ./CONTRIBUTING.md
 
-<!-- GitHub URIs (alphabetical) -->
+<!-- GitHub In-Repo URIs (alphabetical) -->
 
 [ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
 [ghIssues]: https://github.com/TaffarelJr/.actions/issues
 [ghWiki]: https://github.com/TaffarelJr/.actions/wiki
+
+<!-- GitHub URIs (alphabetical) -->
+
 [remark]: https://github.com/remarkjs/.github/blob/main/support.md
 
 <!-- Public URIs (alphabetical) -->

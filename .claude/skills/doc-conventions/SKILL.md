@@ -139,6 +139,8 @@ line:
 ```markdown
 <!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
+<!-- GitHub In-Repo URIs (alphabetical) -->
+
 <!-- GitHub URIs (alphabetical) -->
 
 <!-- Public URIs (alphabetical) -->
@@ -147,8 +149,18 @@ line:
 - **Source Code** — paths inside the repo. Sorted the way an editor's explorer
   shows a tree: at each level, folders before files, each alphabetical. So a
   file inside `docs/` precedes a file at the repo root.
-- **GitHub** — anything on a `github.com` host, including `docs.github.com`
-  and `gist.github.com`. These accumulate, which is why they are separate.
+- **GitHub In-Repo** — links to *this* repo's own GitHub-hosted pages: issues,
+  discussions, wiki, security advisories. Scaffolding retargets these to the
+  new repo when a derived repo is created, and they never change again -
+  keep them separate from the next group for exactly that reason. A file
+  inside `.github`'s own history that touches the general GitHub group would
+  otherwise land its diff right next to a line every derived repo has
+  permanently different, and a template sync conflicts on every such edit
+  for no reason - confirmed live the first time a `.github` PR happened to
+  touch that block.
+- **GitHub** — every other `github.com` host: `docs.github.com`,
+  `gist.github.com`, a different repo (same owner or not). Template-owned,
+  so it syncs freely.
 - **Public** — every other host, alphabetical by reference name.
 
 Omit a group that would be empty. Use `./` for a sibling in the same folder,
