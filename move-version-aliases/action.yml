@@ -1,11 +1,13 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 
-# Repoints vMAJOR and vMAJOR.MINOR at a release's commit, so a consumer
-# pinning @v1 gets each new v1.x.y automatically. Those aliases are excluded
-# from the 'Protect version tags' ruleset for exactly this reason.
+# Repoints vMAJOR and vMAJOR.MINOR at the newest real release in scope, so a
+# consumer pinning @v1 gets each new v1.x.y automatically. Those aliases are
+# excluded from the 'Protect version tags' ruleset for exactly this reason.
 #
-# Assumes releases publish in increasing order - it does not check whether
-# the tag is actually newer than what an alias already points at.
+# Recomputes each alias from every vX.Y.Z tag that exists, rather than just
+# moving it to whichever tag triggered this run, so publishing a backport
+# out of order (v1.0.6 after v1.1.0 already shipped) can never move vMAJOR
+# backwards - and a previous bad move corrects itself on the next publish.
 
 name: Move Version Aliases
 description: Repoints the major and major.minor alias tags at a release tag.
@@ -40,16 +42,34 @@ runs:
           exit 1
         fi
 
-        commit=$(gh api "repos/${REPO}/commits/${tag}" --jq .sha)
         IFS='.' read -r major minor _ <<< "${tag#v}"
 
-        for alias in "v${major}" "v${major}.${minor}"; do
-          if gh api "repos/${REPO}/git/ref/tags/${alias}" >/dev/null 2>&1; then
+        # All real release tags, fetched once - an alias is always
+        # recomputed from this list, never just set to whichever tag
+        # triggered the run.
+        all_tags=$(gh api "repos/${REPO}/tags" --paginate --jq '.[].name')
+
+        for entry in "v${major}:^v${major}\.[0-9]+\.[0-9]+$" \
+          "v${major}.${minor}:^v${major}\.${minor}\.[0-9]+$"; do
+          alias="${entry%%:*}"
+          pattern="${entry#*:}"
+
+          # The newest release in this alias's scope, including the tag that
+          # triggered this run - never older than it, since that tag is in
+          # the list too.
+          newest=$(printf '%s\n' "$all_tags" | grep -E "$pattern" | sort -V | tail -1)
+          commit=$(gh api "repos/${REPO}/commits/${newest}" --jq .sha)
+
+          current=$(gh api "repos/${REPO}/git/ref/tags/${alias}" --jq .object.sha 2>/dev/null || true)
+          if [ "$current" = "$commit" ]; then
+            echo "::notice::${alias} already at ${newest} (${commit})"
+          elif [ -n "$current" ]; then
             gh api --method PATCH "repos/${REPO}/git/refs/tags/${alias}" \
               -f "sha=${commit}" -F force=true >/dev/null
+            echo "::notice::${alias} -> ${newest} (${commit})"
           else
             gh api --method POST "repos/${REPO}/git/refs" \
               -f "ref=refs/tags/${alias}" -f "sha=${commit}" >/dev/null
+            echo "::notice::${alias} -> ${newest} (${commit})"
           fi
-          echo "::notice::${alias} -> ${tag} (${commit})"
         done

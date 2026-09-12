@@ -62,7 +62,7 @@ strategies:
 # that, and being a floor it would simply be overtaken.
 #───────────────────────────────────────────────────────────────────────────────
 
-next-version: 0.0.1
+next-version: 1.0.0
 
 #───────────────────────────────────────────────────────────────────────────────
 # Conventional Commits
