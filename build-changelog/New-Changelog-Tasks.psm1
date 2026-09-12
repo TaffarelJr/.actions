@@ -69,8 +69,13 @@ function Get-VersionTag {
     .DESCRIPTION
         Sorts by parsed SemVer rather than by date or by name, so v10.0.0
         sorts above v9.0.0 and a re-tagged commit cannot reorder the list.
+
+        Only a strict 'vX.Y.Z' shape counts - [SemanticVersion]::TryParse
+        also accepts 'v1' and 'v1.2', which would otherwise let the floating
+        major/minor alias tags masquerade as releases and pick the wrong
+        baseline.
     #>
-    $tags = @(git tag --list 'v*')
+    $tags = @(git tag --list 'v*') | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
 
     $parsed = foreach ($tag in $tags) {
         $candidate = $tag -replace '^v', ''
@@ -90,6 +95,20 @@ function Get-VersionTag {
     return @($parsed | Sort-Object -Property Version -Descending)
 }
 
+function Test-AncestorCommit {
+    <#
+    .SYNOPSIS
+        Returns whether Sha is an ancestor of (or equal to) OfSha.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Sha,
+        [Parameter(Mandatory)][string]$OfSha
+    )
+
+    git merge-base --is-ancestor $Sha $OfSha 2>$null
+    return ($LASTEXITCODE -eq 0)
+}
+
 function Get-ChangelogBaseline {
     <#
     .SYNOPSIS
@@ -98,6 +117,12 @@ function Get-ChangelogBaseline {
         Normally the previous release tag. With no tags at all, a null Sha,
         meaning "all of history" - so an initial release still gets full
         notes including the root commit, which a range would exclude.
+
+        Only a tag that is actually an ancestor of HeadSha is eligible - the
+        newest tag overall can be on an unrelated line of history (e.g. when
+        releasing an earlier build named by 'version', after a newer one has
+        already shipped), and picking it anyway would produce an empty or
+        nonsensical range.
     .PARAMETER HeadSha
         The commit being released.
     .PARAMETER FromTag
@@ -116,9 +141,9 @@ function Get-ChangelogBaseline {
 
     # Exclude a tag already pointing at HEAD: re-running for the same release,
     # or running from a pushed tag, should not produce empty notes.
-    $previous = Get-VersionTag |
-        Where-Object { $_.Sha -ne $HeadSha } |
-        Select-Object -First 1
+    $previous = Get-VersionTag | Where-Object {
+        $_.Sha -ne $HeadSha -and (Test-AncestorCommit -Sha $_.Sha -OfSha $HeadSha)
+    } | Select-Object -First 1
 
     if ($previous) { return $previous }
 
@@ -422,6 +447,7 @@ function Format-ReleaseNote {
 
 Export-ModuleMember -Function @(
     'Get-VersionTag'
+    'Test-AncestorCommit'
     'Get-ChangelogBaseline'
     'Get-ChangelogCommit'
     'ConvertTo-ParsedCommit'

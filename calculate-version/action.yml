@@ -94,7 +94,7 @@ runs:
       id: gitversion
       uses: gittools/actions/gitversion/execute@v4.0.1
       with:
-        useConfigFile: true
+        configFilePath: GitVersion.yml
 
     - name: Report version
       if: inputs.summary == 'true'

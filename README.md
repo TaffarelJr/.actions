@@ -47,6 +47,10 @@ which stays invisible if the release is published unfilled.
 The script and its module travel with the action,
 so the calling repo needs nothing of its own.
 
+`from-tag` rebuilds the notes for an earlier release instead of the most
+recent one. `to-ref` and `repository` default to the current commit and
+this repo; override them to build notes for somewhere else.
+
 ### calculate-version
 
 Calculates the SemVer version for the current commit,
@@ -118,9 +122,11 @@ because a release workflow wants to decide for itself
 whether to fall back or stop.
 
 Pass `version` to find the run that built a particular version instead.
-The recent successful runs on the current branch are searched newest first,
-`search-depth` deep, reading each artifact's `version.txt`;
-`sha` reports which commit the match was built from.
+The recent successful runs are searched newest first, `search-depth` deep,
+reading each artifact's `version.txt`; `sha` reports which commit the match
+was built from. The search runs against the branch that triggered the
+workflow, or the repo's default branch when triggered from a tag or a
+pull request, since neither of those ever has a build of its own.
 
 ### move-version-aliases
 
@@ -136,6 +142,11 @@ See [Versioning](#versioning) for why these tags exist.
 so a `release: published` trigger needs nothing else.
 Pass it explicitly for a `workflow_dispatch` re-run, or to move the
 aliases to some other tag by hand.
+
+Each alias is recomputed from every release tag that exists, not just set
+to whatever tag triggered the run — so publishing an out-of-order backport
+can never move an alias backwards, and a previous bad move corrects itself
+on the next publish.
 
 ### template-sync
 

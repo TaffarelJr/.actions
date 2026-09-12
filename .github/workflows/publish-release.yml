@@ -16,13 +16,18 @@ on:
         description: Release tag to move the aliases to (e.g. v1.4.2)
         required: true
 
-permissions:
-  contents: write # Needed to move the alias tags
+# Two releases published close together would race over the same alias.
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
 
 jobs:
   publish:
     name: Repoint the major and minor aliases
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Needed to move the alias tags
 
     steps:
       - name: Move the aliases

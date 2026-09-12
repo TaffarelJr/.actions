@@ -78,6 +78,7 @@ runs:
         VERSION_FILE: ${{ inputs.version-file }}
         VERSION: ${{ inputs.version }}
         DEPTH: ${{ inputs.search-depth }}
+        REPO: ${{ github.repository }}
       run: |
         version="${VERSION#v}"
         run_id="" sha=""
@@ -94,10 +95,21 @@ runs:
             --jq '.[0] // empty | "\(.databaseId) \(.headSha)"') || true
           wanted="$GITHUB_SHA"
         else
+          # A tag or a pull-request merge ref is not a branch a build ever
+          # ran on - GITHUB_REF_NAME would be the tag name or 'N/merge', and
+          # neither has runs. Fall back to the default branch, since that is
+          # where a named-version build actually lives.
+          if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+            branch="$GITHUB_REF_NAME"
+          else
+            branch=$(gh api "repos/${REPO}" --jq .default_branch)
+          fi
+
           # Only the artifact records which version a run built, so walk the
           # recent successful runs on this branch, newest first, reading each
-          # one's until it matches. A run whose artifact has expired could not
-          # be released anyway, so it is skipped rather than fatal.
+          # one's version file until it matches. A run whose artifact has
+          # expired could not be released anyway, so it is skipped rather
+          # than fatal.
           while read -r id candidate; do
             dir=$(mktemp -d)
             if gh run download "$id" --name "$ARTIFACT" --dir "$dir" >/dev/null 2>&1; then
@@ -112,7 +124,7 @@ runs:
             if [ -n "$run_id" ]; then break; fi
           done < <(gh run list \
             --workflow "$WORKFLOW" \
-            --branch "$GITHUB_REF_NAME" \
+            --branch "$branch" \
             --status success \
             --limit "$DEPTH" \
             --json databaseId,headSha \

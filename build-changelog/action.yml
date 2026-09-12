@@ -53,11 +53,18 @@ runs:
   steps:
     - name: Write the release notes
       shell: pwsh
+      env:
+        VERSION: ${{ inputs.version }}
+        OUTPUT_PATH: ${{ inputs.output-path }}
+        SUMMARY_PATH: ${{ inputs.summary-path }}
+        FROM_TAG: ${{ inputs.from-tag }}
+        TO_REF: ${{ inputs.to-ref }}
+        REPOSITORY: ${{ inputs.repository }}
       run: >
         & '${{ github.action_path }}/New-Changelog.ps1'
-        -Version '${{ inputs.version }}'
-        -OutputPath '${{ inputs.output-path }}'
-        -SummaryPath '${{ inputs.summary-path }}'
-        -FromTag '${{ inputs.from-tag }}'
-        -ToRef '${{ inputs.to-ref }}'
-        -Repository '${{ inputs.repository }}'
+        -Version "$env:VERSION"
+        -OutputPath "$env:OUTPUT_PATH"
+        -SummaryPath "$env:SUMMARY_PATH"
+        -FromTag "$env:FROM_TAG"
+        -ToRef "$env:TO_REF"
+        -Repository "$env:REPOSITORY"
