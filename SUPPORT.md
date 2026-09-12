@@ -53,16 +53,10 @@ from the [Remark][remark] repo.
 
 <!-- GitHub URIs (alphabetical) -->
 
-<<<<<<< HEAD
 [ghDiscussions]: https://github.com/TaffarelJr/.actions/discussions
 [ghIssues]: https://github.com/TaffarelJr/.actions/issues
 [ghWiki]: https://github.com/TaffarelJr/.actions/wiki
-=======
-[ghDiscussions]: https://github.com/TaffarelJr/.github/discussions
-[ghIssues]: https://github.com/TaffarelJr/.github/issues
-[ghWiki]: https://github.com/TaffarelJr/.github/wiki
 [remark]: https://github.com/remarkjs/.github/blob/main/support.md
->>>>>>> template/main
 
 <!-- Public URIs (alphabetical) -->
 

@@ -232,28 +232,6 @@ To report a vulnerability, see [SECURITY.md][securityFile].
 [securityFile]: ./SECURITY.md
 [supportFile]: ./SUPPORT.md
 
-<<<<<<< HEAD
 <!-- Public URIs (alphabetical) -->
 
 [gitVersion]: https://gitversion.net/docs
-=======
-<!-- GitHub URIs (alphabetical) -->
-
-[actionsRepo]: https://github.com/TaffarelJr/.actions
-[ghComHealth]: https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file
-[ghCopilot]: https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot
-[ghDependabot]: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
-[ghGitAttributes]: https://github.com/gitattributes/gitattributes
-[ghGitIgnore]: https://github.com/github/gitignore
-[ghIssueChooser]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#configuring-the-template-chooser
-[ghIssueForms]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms
-[ghPRTemplate]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
-[ghSettings]: https://github.com/repository-settings/app
-[ghTemplates]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
-[ghWorkflows]: https://docs.github.com/en/actions/how-tos/writing-workflows
-
-<!-- Public URIs (alphabetical) -->
-
-[codecovDocs]: https://docs.codecov.com/docs/codecovyml-reference
-[freeCodeCamp]: https://www.freecodecamp.org/news/how-to-use-the-dot-github-repository
->>>>>>> template/main
