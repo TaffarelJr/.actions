@@ -45,11 +45,14 @@ own customizations or drifts from its template.
 - **`.github/workflows/template-sync.yml` — the template, always.** It carries
   no per-repo values: `TEMPLATE_REPO_URL` and `TEMPLATE_SYNC_STRATEGY` are
   repo variables, so it cannot legitimately differ from the parent's.
-- **`.github/workflows/continuous-integration.yml` — the template in a
-  template layer, the leaf in a leaf.** The test runner discovers its files,
-  so a template layer's copy cannot legitimately differ from the parent's.
-  A leaf has no `scripts/` — scaffolding deleted the template's workflow
-  with them — so the one it carries is its own; keep it.
+- **`.github/workflows/test-scripts.yml` — the template, always.** The test
+  runner discovers its files, so a template layer's copy cannot legitimately
+  differ from the parent's. A leaf has no `scripts/` — scaffolding deletes
+  this workflow along with them, so a leaf never carries this file at all.
+- **`.github/workflows/continuous-integration.yml` — owned locally, if it
+  exists at all.** Not shipped by the template. A leaf (or a template layer
+  generating one for the leaves it scaffolds) authors its own product
+  build/test/pack pipeline under this name; keep the local copy.
 - **`README.md` — split.** This repo owns the diagram highlight and its own
   tables; the template owns the shared structure.
 - **`LICENSE` — this repo**, if it is private and carries the proprietary

@@ -234,11 +234,14 @@ Resolve by taking the incoming structure and re-applying the local keys.
 
 - **Repo settings — this repo.** It declares only its own deltas;
   the rest is inherited through `_extends` at runtime, not through the file.
-- **The CI workflow — the template, until a layer builds something.**
-  The base's runs the scaffolding scripts' tests, and the runner discovers
-  each layer's own test files, so a template layer runs it verbatim.
-  A leaf has no scripts: scaffolding deletes the workflow along with them,
-  and the leaf writes its own — which is where its toolchain lives.
+- **`test-scripts.yml` — the template, always.** It runs the scaffolding
+  scripts' own tests, and the runner discovers each layer's own test files,
+  so a template layer runs it verbatim. A leaf has no scripts: scaffolding
+  deletes this workflow along with them.
+- **`continuous-integration.yml` — owned locally, if it exists at all.**
+  Not shipped by the template — a leaf (or a template layer generating one
+  for the leaves it scaffolds) writes its own here, which is where its
+  toolchain lives.
 - **The publish workflow — this layer.** What happens when a release is
   published is the layer's own business, so a layer with something to do
   at that moment carries its own `publish-release.yml`,
