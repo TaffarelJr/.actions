@@ -68,6 +68,11 @@ outputs:
       parent edited that this repo had already deleted, and a scripts/ the
       parent added where this repo - a leaf - carries none of its own.
     value: ${{ steps.build.outputs.deleted }}
+  kept-ours:
+    description: >-
+      Paths where this repo's own version always wins over the parent's,
+      because the answer never changes between syncs.
+    value: ${{ steps.build.outputs.kept-ours }}
   missing:
     description: How many patches the parent held that this repo did not.
     value: ${{ steps.plan.outputs.missing }}
@@ -188,6 +193,7 @@ runs:
         conflict=false
         : > /tmp/conflicts.txt
         : > /tmp/deleted.txt
+        : > /tmp/kept-ours.txt
 
         # A leaf has no scripts/ of its own. Captured before the merge/rebase
         # runs, so a new file the parent adds there can be told apart from
@@ -197,17 +203,55 @@ runs:
           had_scripts=true
         fi
 
+        # This repo's own version of these always wins, because the answer
+        # never changes between syncs: settings.yml is a genuinely different
+        # document per repo, and README.md is split by design. Asking a
+        # human the same question every single sync gets nothing.
+        KEEP_OURS=('README.md' '.github/settings.yml')
+
+        # Needed to tell a real rename on the parent's side apart from a
+        # coincidence: the point in history the two sides last agreed on.
+        merge_base=$(git merge-base "${base}" "${upstream}")
+
         # A file this repo deliberately deleted, which the parent has since
         # edited, conflicts on every single sync. The repo's answer is already
         # on record - it is not in the base branch - so honour that instead of
         # raising the same question forever. Anything still present in the base
         # is a real conflict and is left for a human.
+        #
+        # A rename on the parent's side complicates that: git reports the
+        # conflict at the NEW path, so "is it in the base?" sees a path that
+        # never existed here and calls the delete safe - even if the parent's
+        # rename paired it with a path this repo already owns under the OLD
+        # name. If this repo's copy of that old name has diverged from the
+        # parent since they last shared history, the delete would erase
+        # content that only looks unfamiliar because of the rename, so that
+        # case is left for a human too.
         resolve_deletions() {
-          local path
+          local path keep renamed_from
           for path in $(git diff --name-only --diff-filter=U); do
+            for keep in "${KEEP_OURS[@]}"; do
+              if [[ "${path}" == "${keep}" ]]; then
+                git checkout --ours -- "${path}"
+                git add -- "${path}"
+                echo "${path}" >> /tmp/kept-ours.txt
+                continue 2
+              fi
+            done
+
             if git cat-file -e "${base}:${path}" 2>/dev/null; then
               continue
             fi
+
+            renamed_from=$(git diff --name-status -M --diff-filter=R \
+                "${merge_base}" "${upstream}" \
+              | awk -v t="${path}" '$3 == t { print $2 }')
+            if [[ -n "${renamed_from}" ]] \
+              && git cat-file -e "${base}:${renamed_from}" 2>/dev/null \
+              && ! git diff --quiet "${merge_base}" "${base}" -- "${renamed_from}"; then
+              continue
+            fi
+
             git rm -q -f -- "${path}"
             echo "${path}" >> /tmp/deleted.txt
           done
@@ -267,6 +311,12 @@ runs:
           echo "::notice::Kept deleted, as this repo already had: ${deleted}"
         fi
 
+        kept=$(sort -u /tmp/kept-ours.txt | sed '/^$/d' | tr '\n' ' ')
+        if [[ -n "${kept}" ]]; then
+          echo "kept-ours=${kept}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Kept this repo's own version, as always: ${kept}"
+        fi
+
         if [[ "${conflict}" == "true" ]]; then
           files=$(sort -u /tmp/conflicts.txt | sed '/^$/d' | tr '\n' ' ')
           echo "::warning::Conflicts, committed as-is, in: ${files}"
@@ -290,6 +340,7 @@ runs:
         STRATEGY: ${{ inputs.strategy }}
         CONFLICT: ${{ steps.build.outputs.conflict }}
         DELETED: ${{ steps.build.outputs.deleted }}
+        KEPT_OURS: ${{ steps.build.outputs.kept-ours }}
         MISSING: ${{ steps.plan.outputs.missing }}
       run: |
         title="Merge changes from template repo"
@@ -305,10 +356,16 @@ runs:
           deleted_note="Left deleted, because this repo had already removed them: \`${DELETED}\`"
         fi
 
-        body=$(printf '%s\n\n%s\n\n%s\n\n%s\n' \
+        kept_note=""
+        if [[ -n "${KEPT_OURS}" ]]; then
+          kept_note="Kept this repo's own version, as always: \`${KEPT_OURS}\`"
+        fi
+
+        body=$(printf '%s\n\n%s\n\n%s\n\n%s\n\n%s\n' \
           "Automated sync of ${MISSING} patch(es) from \`${TEMPLATE_URL}\` via \`${STRATEGY}\`." \
           "${note}" \
           "${deleted_note}" \
+          "${kept_note}" \
           "This branch is rebuilt whenever either side moves, so it stays current until merged.")
 
         number=$(gh pr list --repo "${GITHUB_REPOSITORY}" \
