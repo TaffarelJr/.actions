@@ -72,7 +72,7 @@ description: PowerShell conventions
 ## Scaffolding scripts
 
 If this repo has a `scripts/New-Repo.ps1`,
-read [scripts/README.md][scriptsFile] before touching anything in there.
+read `scripts/README.md` before touching anything in there.
 Everything in `scripts/` except a layer's own `New-Repo-<NN>-<slug>.psm1`
 (and its test file) is inherited verbatim by every layer
 and must stay byte-identical across them;
@@ -86,7 +86,3 @@ layer-specific behavior belongs in an additive `New-Repo-<NN>-<slug>.psm1`.
 - Say what a step is about to do with `Write-Doing`, and how it went with
   `Write-Done` (or `Write-Done -Skip`). Several outcomes in one step get
   `Write-Doing` once, then `Write-Ok` or `Write-Skip` per outcome.
-
-<!-- Source Code URIs (folders first, then files; each alphabetical) -->
-
-[scriptsFile]: ../../scripts/README.md

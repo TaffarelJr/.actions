@@ -13,6 +13,6 @@ See [docs/AiInstructions.md][aiFile] for how the pieces fit together.
 <!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [instructionsFolder]: ./instructions/
-[aiFile]: ../docs/AiInstructions.md
 [docsFolder]: ../docs/
+[aiFile]: ../docs/AiInstructions.md
 [agentsFile]: ../AGENTS.md

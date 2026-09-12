@@ -161,5 +161,7 @@ Do not "fix" these back to upstream:
 - Fit the change into the existing commit that owns the file rather than
   stacking a new one, per this repo's history convention.
 
+<!-- GitHub URIs (alphabetical) -->
+
 [ga]: https://github.com/gitattributes/gitattributes
 [gi]: https://github.com/github/gitignore

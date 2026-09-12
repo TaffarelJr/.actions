@@ -120,8 +120,8 @@ over from an external template (`CONTRIBUTING.md`,
 [codecovFile]: ./.github/codecov.yml
 [aiFile]: ./docs/AiInstructions.md
 [ccFile]: ./docs/ConventionalCommits.md
-[rulersFile]: ./docs/VerticalRulers.md
 [styleguideFile]: ./docs/Styleguide.md
+[rulersFile]: ./docs/VerticalRulers.md
 [editorConfigFile]: ./.editorconfig
 [gitAttributesFile]: ./.gitattributes
 [contribFile]: ./CONTRIBUTING.md
