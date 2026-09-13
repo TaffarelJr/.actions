@@ -15,8 +15,11 @@
 #
 # The caller must have checked out with fetch-depth: 0 - the changelog needs
 # all the history and tags. The caller should also grant copilot-requests:
-# write, or the AI summary has no permission to run and the notes keep
-# their placeholder - never fatal, just quietly less useful.
+# write and pass GH_TOKEN: ${{ github.token }} at its own workflow level -
+# an env var set on this action's own steps does not reliably reach
+# ai-inference, a nested composite action call, so it has to come from
+# higher up. Without it the AI summary has no way to authenticate and the
+# notes keep their placeholder - never fatal, just quietly less useful.
 
 name: Draft Release
 description: Drafts a GitHub Release from the CI artifacts built for this commit.
@@ -183,6 +186,11 @@ runs:
       continue-on-error: true
       run: npm install -g @github/copilot@1.0.83
 
+    # GH_TOKEN is NOT set here on purpose. An env var on this step would only
+    # reach ai-inference's own process, not the Copilot CLI subprocess it
+    # shells out to, and testing that live confirmed it: the token has to
+    # come from the calling workflow, which is the only level an env var
+    # actually cascades down through every nested composite action from.
     - name: Summarize the changelog
       id: summary
       continue-on-error: true
@@ -190,13 +198,6 @@ runs:
       with:
         prompt-file: prompt.txt
         model: gpt-4.1
-      env:
-        # The action's own 'token' input defaults to github.token, but that
-        # is not what the Copilot CLI subprocess it shells out to actually
-        # reads - the CLI only looks at its own process environment, so the
-        # token has to be handed to it explicitly here, the same way GH_TOKEN
-        # already is for this file's own gh CLI calls.
-        GH_TOKEN: ${{ github.token }}
 
     - name: Rewrite the notes with the summary
       if: steps.summary.outcome == 'success' && steps.summary.outputs.response-file != ''
