@@ -128,6 +128,11 @@ function Get-ChangelogBaseline {
         releasing an earlier build named by 'version', after a newer one has
         already shipped), and picking it anyway would produce an empty or
         nonsensical range.
+
+        LinkFrom is always something to compare from, even when Sha is not:
+        the previous tag's name normally, or the repo's very first commit
+        when there is no previous tag - so a first release still gets a real
+        compare link instead of one with nothing on the other side.
     .PARAMETER HeadSha
         The commit being released.
     .PARAMETER FromTag
@@ -141,7 +146,10 @@ function Get-ChangelogBaseline {
     if ($FromTag) {
         $match = Get-VersionTag | Where-Object { $_.Tag -eq $FromTag }
         if (-not $match) { throw "Tag '$FromTag' was not found." }
-        return $match
+        return [pscustomobject]@{
+            Tag = $match.Tag; Version = $match.Version; Sha = $match.Sha
+            LinkFrom = $match.Tag
+        }
     }
 
     # Exclude a tag already pointing at HEAD: re-running for the same release,
@@ -150,9 +158,18 @@ function Get-ChangelogBaseline {
         $_.Sha -ne $HeadSha -and (Test-AncestorCommit -Sha $_.Sha -OfSha $HeadSha)
     } | Select-Object -First 1
 
-    if ($previous) { return $previous }
+    if ($previous) {
+        return [pscustomobject]@{
+            Tag = $previous.Tag; Version = $previous.Version; Sha = $previous.Sha
+            LinkFrom = $previous.Tag
+        }
+    }
 
-    return [pscustomobject]@{ Tag = $null; Version = $null; Sha = $null }
+    $rootSha = (git rev-list --max-parents=0 $HeadSha | Select-Object -First 1)
+    return [pscustomobject]@{
+        Tag = $null; Version = $null; Sha = $null
+        LinkFrom = $(if ($rootSha) { $rootSha.Trim() } else { $null })
+    }
 }
 
 function Get-ChangelogCommit {
@@ -437,10 +454,13 @@ function Format-ReleaseNote {
     }
 
     # The compare link is where the commit-by-commit detail lives, so nothing
-    # has to be inlined to be available.
-    if ($Repository -and $Baseline.Tag) {
-        $url = "https://github.com/$Repository/compare/$($Baseline.Tag)...v$Version"
-        $lines.Add("**Full Changelog**: [$($Baseline.Tag)...v$Version]($url)")
+    # has to be inlined to be available. LinkFrom is the previous release tag
+    # normally, or the repo's first commit when there is none - either way
+    # there is always a real compare, even for the very first release.
+    if ($Repository -and $Baseline.LinkFrom) {
+        $label = if ($Baseline.Tag) { $Baseline.Tag } else { $Baseline.LinkFrom.Substring(0, 7) }
+        $url = "https://github.com/$Repository/compare/$($Baseline.LinkFrom)...v$Version"
+        $lines.Add("**Full Changelog**: [$label...v$Version]($url)")
     }
     elseif ($Repository) {
         $url = "https://github.com/$Repository/commits/v$Version"
