@@ -190,6 +190,13 @@ runs:
       with:
         prompt-file: prompt.txt
         model: gpt-4.1
+      env:
+        # The action's own 'token' input defaults to github.token, but that
+        # is not what the Copilot CLI subprocess it shells out to actually
+        # reads - the CLI only looks at its own process environment, so the
+        # token has to be handed to it explicitly here, the same way GH_TOKEN
+        # already is for this file's own gh CLI calls.
+        GH_TOKEN: ${{ github.token }}
 
     - name: Rewrite the notes with the summary
       if: steps.summary.outcome == 'success' && steps.summary.outputs.response-file != ''
