@@ -144,15 +144,23 @@ runs:
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
         fi
 
+    # actions/download-artifact raises a job-level ##[error] when the named
+    # artifact does not exist, even with continue-on-error - alarming for
+    # what is, for a repo with nothing to package, the routine case. `gh run
+    # download` reports the same condition as plain text instead, matching
+    # how the version-search branch above already handles a missing one.
     - name: Download the built artifacts
       if: steps.locate.outputs.found == 'true'
-      continue-on-error: true # An expired artifact must not kill the release
-      uses: actions/download-artifact@v8
-      with:
-        name: ${{ inputs.artifact-name }}
-        path: ${{ inputs.path }}
-        run-id: ${{ steps.locate.outputs.run-id }}
-        github-token: ${{ inputs.token }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        RUN_ID: ${{ steps.locate.outputs.run-id }}
+        ARTIFACT: ${{ inputs.artifact-name }}
+        DOWNLOAD_PATH: ${{ inputs.path }}
+      run: |
+        if ! gh run download "$RUN_ID" --name "$ARTIFACT" --dir "$DOWNLOAD_PATH" 2>/dev/null; then
+          echo "::notice::Run $RUN_ID has no '$ARTIFACT' artifact (expired, or this repo has nothing to package)."
+        fi
 
     - name: Read the version that was built
       id: read
