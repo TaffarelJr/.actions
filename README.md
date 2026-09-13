@@ -94,13 +94,13 @@ it, and attaches whatever that run built.
     fetch-depth: 0 # the changelog needs all the history and tags
 
 - uses: TaffarelJr/.actions/draft-release@v1
-  with:
-    copilot-pat: ${{ secrets.COPILOT_PAT }}
 ```
 
 The release is always a draft: nothing is public until a human opens
-it and presses Publish. `copilot-pat` is optional — without it the
-notes keep a placeholder instead of a generated summary.
+it and presses Publish. The job also needs `copilot-requests: write` in
+its `permissions:` for the AI summary — without it (or if the account
+has no Copilot entitlement) the notes keep a placeholder instead of a
+generated summary, same as any other outage.
 
 By default the draft is for the commit the workflow runs from.
 Pass `version` to release an earlier build instead:

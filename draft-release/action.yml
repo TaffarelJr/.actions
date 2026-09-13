@@ -14,7 +14,9 @@
 # that turns out to be wrong costs nothing.
 #
 # The caller must have checked out with fetch-depth: 0 - the changelog needs
-# all the history and tags.
+# all the history and tags. The caller should also grant copilot-requests:
+# write, or the AI summary has no permission to run and the notes keep
+# their placeholder - never fatal, just quietly less useful.
 
 name: Draft Release
 description: Drafts a GitHub Release from the CI artifacts built for this commit.
@@ -33,12 +35,6 @@ inputs:
       Release this earlier build instead of this commit's, e.g. 1.4.2 or
       v1.4.2. There is no fallback: if no CI run still holds that version's
       artifact, the draft is refused.
-    required: false
-    default: ""
-  copilot-pat:
-    description: >-
-      PAT for an account with Copilot, used to draft the summary. Optional;
-      without it the notes keep their placeholder comment.
     required: false
     default: ""
 
@@ -154,11 +150,11 @@ runs:
 
     # ── Have a model write the opening paragraph ──────────────────────────
     #
-    # Always attempted, never required. A missing token, an expired one, a
-    # service outage or a network error all land in the same place: the
-    # placeholder comment stays, the release still gets drafted, and you can
-    # either write the paragraph yourself or delete the draft and re-run
-    # once the service is back.
+    # Always attempted, never required. A missing copilot-requests: write
+    # permission on the caller, a service outage, or a network error all
+    # land in the same place: the placeholder comment stays, the release
+    # still gets drafted, and you can either write the paragraph yourself
+    # or delete the draft and re-run once the service is back.
 
     - name: Build the summary prompt
       shell: bash
@@ -194,8 +190,6 @@ runs:
       with:
         prompt-file: prompt.txt
         model: gpt-4.1
-      env:
-        COPILOT_GITHUB_TOKEN: ${{ inputs.copilot-pat }}
 
     - name: Rewrite the notes with the summary
       if: steps.summary.outcome == 'success' && steps.summary.outputs.response-file != ''
