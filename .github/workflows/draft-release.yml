@@ -32,6 +32,7 @@ jobs:
     permissions:
       contents: write # Needed to create the release
       actions: read # Needed to read artifacts from the CI run
+      copilot-requests: write # Needed for the release-notes summary
 
     steps:
       - name: Checkout repo
@@ -43,4 +44,3 @@ jobs:
         uses: TaffarelJr/.actions/draft-release@v1
         with:
           version: ${{ inputs.version }}
-          copilot-pat: ${{ secrets.COPILOT_PAT }}
