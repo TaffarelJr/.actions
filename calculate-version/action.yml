@@ -86,13 +86,13 @@ runs:
       # already has the .NET SDK, so no setup-dotnet step is needed -
       # which is what keeps this usable
       # from a repo that has nothing to do with .NET.
-      uses: gittools/actions/gitversion/setup@v4.0.1
+      uses: gittools/actions/gitversion/setup@v4.7.0
       with:
         versionSpec: "6.x"
 
     - name: Calculate version
       id: gitversion
-      uses: gittools/actions/gitversion/execute@v4.0.1
+      uses: gittools/actions/gitversion/execute@v4.7.0
       with:
         configFilePath: GitVersion.yml
 
