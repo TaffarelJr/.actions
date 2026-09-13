@@ -44,9 +44,9 @@ Re-running replaces the draft for that version rather than adding a second,
 so a failed or wrong attempt costs nothing.
 
 If the notes open with an HTML comment instead of a paragraph, the summary
-model was unavailable — `COPILOT_PAT` missing or expired, or the service
-down. The draft is still good: write the paragraph by hand at review, or
-delete the draft and re-run later.
+model was unavailable — the account's Copilot entitlement, or the service
+itself, down. The draft is still good: write the paragraph by hand at
+review, or delete the draft and re-run later.
 
 ## Review
 

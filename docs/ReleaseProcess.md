@@ -16,7 +16,7 @@ how binaries are built, and how a release is cut and published.
   - [3. Publish](#3-publish)
 - [Release Notes vs. Changelog](#release-notes-vs-changelog)
   - [Writing the Summary](#writing-the-summary)
-    - [Getting the token](#getting-the-token)
+    - [Authentication](#authentication)
 - [What Each Layer Owns](#what-each-layer-owns)
 
 ## Principles
@@ -266,9 +266,10 @@ which changes the history it is trying to describe.
 ### Writing the Summary
 
 The workflow always asks a model to draft the opening paragraph
-from the generated changelog, using the `COPILOT_PAT` secret.
+from the generated changelog, using the workflow's own `copilot-requests: write`
+permission — no token to create or store.
 
-It is never required. A missing or expired token, a service outage,
+It is never required. A missing permission, a service outage,
 a network error — all land in the same place:
 the summary stays a placeholder and the release is still drafted.
 A missing paragraph is not worth failing a release over.
@@ -278,23 +279,20 @@ simply has no opening paragraph, rather than a visible `TODO`.
 Replace the whole comment with a paragraph or two to fill it in,
 or delete the draft and re-run once the service is back.
 
-#### Getting the token
+#### Authentication
 
 The summary runs through the [`actions/ai-inference`][aiAction] action,
 which drives the Copilot CLI.
-That authenticates an *account* holding a Copilot entitlement,
-so it needs a personal access token — the built-in `GITHUB_TOKEN` will not do.
+As of the built-in `GITHUB_TOKEN` support GitHub added for Actions,
+that needs nothing beyond the `copilot-requests: write` permission
+already declared on `draft-release.yml` — there is no secret to create,
+store, or rotate.
 
-1. `Settings` → `Developer settings` → `Personal access tokens`
-2. Generate a **fine-grained** token with no repository access,
-   because it authenticates the account rather than a repo
-3. [Add it as the `COPILOT_PAT` secret][actionsSecrets]
-
-A personal account cannot share an Actions secret across repos —
-that is an organization feature — so the secret is per-repo.
-`New-Repo.ps1` sets it when creating a repo,
-reading the value from the `COPILOT_PAT` environment variable
-so there is nothing to paste in.
+This still depends on the repo's owner having an active Copilot
+entitlement. On an organization-owned repo, that also needs the
+"Allow use of Copilot CLI billed to the organization" policy enabled;
+the equivalent for a personal-account repo has not been exercised here
+yet, so treat that combination as unverified until a real run confirms it.
 
 ## What Each Layer Owns
 
@@ -331,7 +329,6 @@ Everything else works without modification.
 <!-- GitHub URIs (alphabetical) -->
 
 [actionsRepo]: https://github.com/TaffarelJr/.actions
-[actionsSecrets]: https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions
 [aiAction]: https://github.com/actions/ai-inference
 
 <!-- Public URIs (alphabetical) -->
