@@ -44,3 +44,11 @@ jobs:
         uses: TaffarelJr/.actions/draft-release@v1
         with:
           version: ${{ inputs.version }}
+        env:
+          # Must be set here, at the workflow level - an env var set on a
+          # *nested* composite action's own step (draft-release calling
+          # ai-inference) does not reliably reach the action it calls; only
+          # one set by the calling workflow cascades down through every
+          # layer. This is what lets the Copilot CLI, several layers deep,
+          # actually authenticate with the copilot-requests: write grant above.
+          GH_TOKEN: ${{ github.token }}
