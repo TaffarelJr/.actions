@@ -288,6 +288,14 @@ that needs nothing beyond the `copilot-requests: write` permission
 already declared on `draft-release.yml` — there is no secret to create,
 store, or rotate.
 
+The permission alone is not enough, though: `draft-release.yml` still
+passes `GH_TOKEN: ${{ github.token }}` explicitly, at the workflow level.
+An environment variable set on a *nested* composite action's own step —
+`draft-release` calling `ai-inference` — does not reliably reach the
+action it calls; only one set by the calling workflow cascades down
+through every layer, which is what actually lets the Copilot CLI, several
+layers deep, see the token.
+
 This still depends on the repo's owner having an active Copilot
 entitlement. On an organization-owned repo, that also needs the
 "Allow use of Copilot CLI billed to the organization" policy enabled;
