@@ -191,13 +191,17 @@ runs:
     # shells out to, and testing that live confirmed it: the token has to
     # come from the calling workflow, which is the only level an env var
     # actually cascades down through every nested composite action from.
+    # An empty model lets the Copilot CLI auto-select one available on the
+    # account's own plan, rather than pinning a name that can quietly stop
+    # being available (confirmed live: gpt-4.1, this step's previous pin,
+    # started failing with "not available" with no code change on our side).
     - name: Summarize the changelog
       id: summary
       continue-on-error: true
       uses: actions/ai-inference@v3
       with:
         prompt-file: prompt.txt
-        model: gpt-4.1
+        model: ""
 
     - name: Rewrite the notes with the summary
       if: steps.summary.outcome == 'success' && steps.summary.outputs.response-file != ''
