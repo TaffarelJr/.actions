@@ -49,14 +49,16 @@ runs:
         # triggered the run.
         all_tags=$(gh api "repos/${REPO}/tags" --paginate --jq '.[].name')
 
-        for entry in "v${major}:^v${major}\.[0-9]+\.[0-9]+$" \
-          "v${major}.${minor}:^v${major}\.${minor}\.[0-9]+$"; do
-          alias="${entry%%:*}"
-          pattern="${entry#*:}"
+        # Read-then-act, so a transient inconsistency right after GitHub
+        # creates a tag (observed live: a brand-new alias's own existence
+        # check briefly disagreed with reality, turning its first-ever
+        # creation into a "reference does not exist" failure) does not fail
+        # the whole run - retried a few times, from a fresh read each time,
+        # rather than assumed to be a real, permanent problem.
+        move_alias() {
+          local alias="$1" pattern="$2"
+          local newest commit current
 
-          # The newest release in this alias's scope, including the tag that
-          # triggered this run - never older than it, since that tag is in
-          # the list too.
           newest=$(printf '%s\n' "$all_tags" | grep -E "$pattern" | sort -V | tail -1)
           commit=$(gh api "repos/${REPO}/commits/${newest}" --jq .sha)
 
@@ -72,4 +74,21 @@ runs:
               -f "ref=refs/tags/${alias}" -f "sha=${commit}" >/dev/null
             echo "::notice::${alias} -> ${newest} (${commit})"
           fi
+        }
+
+        for entry in "v${major}:^v${major}\.[0-9]+\.[0-9]+$" \
+          "v${major}.${minor}:^v${major}\.${minor}\.[0-9]+$"; do
+          alias="${entry%%:*}"
+          pattern="${entry#*:}"
+
+          attempt=1
+          until move_alias "$alias" "$pattern"; do
+            if [ "$attempt" -ge 3 ]; then
+              echo "::error::Could not move ${alias} after ${attempt} attempts."
+              exit 1
+            fi
+            echo "::warning::Moving ${alias} failed (attempt ${attempt}); retrying."
+            sleep $((attempt * 2))
+            attempt=$((attempt + 1))
+          done
         done
