@@ -11,6 +11,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [fetch-release-artifacts](#fetch-release-artifacts)
   - [move-version-aliases](#move-version-aliases)
   - [template-sync](#template-sync)
+  - [test-scripts](#test-scripts)
   - [validate-codecov](#validate-codecov)
 - [Versioning](#versioning)
 - [Contributing](#contributing)
@@ -186,6 +187,22 @@ which is the end of the chain and so the only place a merge commit belongs.
 The token matters: a pull request opened with the default `GITHUB_TOKEN`
 cannot trigger workflows, so a required status check would never report
 and the PR could never be merged.
+
+### test-scripts
+
+Runs every `*.Tests.ps1` in the repo, each in its own PowerShell process,
+and fails if any file does.
+
+```yaml
+- uses: TaffarelJr/.actions/test-scripts@v1
+```
+
+Discovery is recursive and by pattern, so a test file is picked up by
+existing: drop a `<Module>.Tests.ps1` beside the module it exercises and
+nothing else changes. Each file imports the shared harness through the
+`TESTKIT_PATH` environment variable the runner sets, so it can live in any
+folder. Pass `path` to search one subfolder only, or `show-output: true` to
+see every file's output rather than only a failing file's.
 
 ### validate-codecov
 

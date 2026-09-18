@@ -370,7 +370,8 @@ function Get-CountSentence {
     $breaking = @($Commits | Where-Object { $_.IsBreaking }).Count
     $features = @($Commits | Where-Object { $_.Type -eq 'feat' }).Count
     $fixes = @($Commits | Where-Object { $_.Type -eq 'fix' }).Count
-    $other = $Commits.Count - $breaking - $features - $fixes
+    # Breaking is a view, not a category - a breaking feat is still a feat.
+    $other = $Commits.Count - $features - $fixes
 
     $parts = [System.Collections.Generic.List[string]]::new()
     if ($breaking) { $parts.Add("**$breaking breaking**") }
