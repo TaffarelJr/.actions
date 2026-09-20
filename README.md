@@ -6,14 +6,14 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 
 - [Getting Started](#getting-started)
   - [build-changelog](#build-changelog)
-  - [calculate-version](#calculate-version)
   - [draft-release](#draft-release)
   - [fetch-release-artifacts](#fetch-release-artifacts)
-  - [move-version-aliases](#move-version-aliases)
   - [powershell/restore](#powershellrestore)
   - [powershell/test](#powershelltest)
   - [template-sync](#template-sync)
   - [validate-codecov](#validate-codecov)
+  - [version/calculate](#versioncalculate)
+  - [version/move-aliases](#versionmove-aliases)
 - [Versioning](#versioning)
 - [Contributing](#contributing)
 - [Support](#support)
@@ -24,7 +24,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 Reference an action by its folder, pinned to a major version:
 
 ```yaml
-- uses: TaffarelJr/.actions/calculate-version@v1
+- uses: TaffarelJr/.actions/version/calculate@v1
 ```
 
 Each one is a composite action, so it runs inside the calling job
@@ -59,31 +59,6 @@ so the calling repo needs nothing of its own.
 `from-tag` rebuilds the notes for an earlier release instead of the most
 recent one. `to-ref` and `repository` default to the current commit and
 this repo; override them to build notes for somewhere else.
-
-### calculate-version
-
-Calculates the SemVer version for the current commit,
-using [GitVersion][gitVersion] and the repo's own `GitVersion.yml`.
-It reads git history only, so it is not specific to any language.
-
-```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0 # GitVersion needs all the history and tags
-
-- id: version
-  uses: TaffarelJr/.actions/calculate-version@v1
-
-- run: echo "Building ${{ steps.version.outputs.semVer }}"
-```
-
-Most outputs forward GitVersion's own. The exception is `tag`,
-which encodes the tag convention — `v` plus the version —
-so no workflow has to build that string itself
-and none of them can disagree about it.
-
-Set `summary: false` where the version is only a fallback,
-so the job summary does not announce a number that was not used.
 
 ### draft-release
 
@@ -141,26 +116,6 @@ reading each artifact's `version.txt`; `sha` reports which commit the match
 was built from. The search runs against the branch that triggered the
 workflow, or the repo's default branch when triggered from a tag or a
 pull request, since neither of those ever has a build of its own.
-
-### move-version-aliases
-
-Repoints the major and major.minor alias tags at a release,
-so a consumer pinning `@v1` gets each new `v1.x.y` automatically.
-See [Versioning](#versioning) for why these tags exist.
-
-```yaml
-- uses: TaffarelJr/.actions/move-version-aliases@v1
-```
-
-`tag` defaults to the tag of the release that triggered the workflow,
-so a `release: published` trigger needs nothing else.
-Pass it explicitly for a `workflow_dispatch` re-run, or to move the
-aliases to some other tag by hand.
-
-Each alias is recomputed from every release tag that exists, not just set
-to whatever tag triggered the run — so publishing an out-of-order backport
-can never move an alias backwards, and a previous bad move corrects itself
-on the next publish.
 
 ### powershell/restore
 
@@ -245,6 +200,51 @@ This turns that into a failed check,
 and puts the validator's own reason in the log
 so it says *what* is wrong rather than only *that* something is.
 
+### version/calculate
+
+Calculates the SemVer version for the current commit,
+using [GitVersion][gitVersion] and the repo's own `GitVersion.yml`.
+It reads git history only, so it is not specific to any language.
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0 # GitVersion needs all the history and tags
+
+- id: version
+  uses: TaffarelJr/.actions/version/calculate@v1
+
+- run: echo "Building ${{ steps.version.outputs.semVer }}"
+```
+
+Most outputs forward GitVersion's own. The exception is `tag`,
+which encodes the tag convention — `v` plus the version —
+so no workflow has to build that string itself
+and none of them can disagree about it.
+
+Set `summary: false` where the version is only a fallback,
+so the job summary does not announce a number that was not used.
+
+### version/move-aliases
+
+Repoints the major and major.minor alias tags at a release,
+so a consumer pinning `@v1` gets each new `v1.x.y` automatically.
+See [Versioning](#versioning) for why these tags exist.
+
+```yaml
+- uses: TaffarelJr/.actions/version/move-aliases@v1
+```
+
+`tag` defaults to the tag of the release that triggered the workflow,
+so a `release: published` trigger needs nothing else.
+Pass it explicitly for a `workflow_dispatch` re-run, or to move the
+aliases to some other tag by hand.
+
+Each alias is recomputed from every release tag that exists, not just set
+to whatever tag triggered the run — so publishing an out-of-order backport
+can never move an alias backwards, and a previous bad move corrects itself
+on the next publish.
+
 ## Versioning
 
 Consumers pin a major version, so `v1` has to keep moving
@@ -261,9 +261,9 @@ which is why the moving ones are deliberately kept out of releases.
 Publishing a release moves both automatically; nothing to do by hand.
 
 Every tag here is `v` plus a bare version number, and several actions strip
-or rebuild that prefix independently — `calculate-version`'s own `tag`
+or rebuild that prefix independently — `version/calculate`'s own `tag`
 output, `draft-release`'s and `fetch-release-artifacts`'s `version` input,
-and `move-version-aliases`'s `tag` input all start from a different kind of
+and `version/move-aliases`'s `tag` input all start from a different kind of
 string, so there is no single place to normalize it once. If the convention
 itself ever changes, grep for `#v` across this repo's `action.yml` files
 rather than assuming one of them owns it.

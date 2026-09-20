@@ -71,7 +71,7 @@ runs:
     - name: Calculate a fallback version
       id: fallback
       if: steps.artifacts.outputs.version == '' && inputs.version == ''
-      uses: TaffarelJr/.actions/calculate-version@v1
+      uses: TaffarelJr/.actions/version/calculate@v1
       with:
         summary: "false" # Only a fallback; do not announce it as the version
 
@@ -117,7 +117,7 @@ runs:
         # A pull-request or dispatch build carries a pre-release suffix
         # (e.g. 0.12.1-PullRequest9.1) - refuse it here, before a draft is
         # even created, rather than letting a human publish it and only
-        # failing later when move-version-aliases sees the same shape.
+        # failing later when version/move-aliases sees the same shape.
         if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           echo "::error::'$version' is not a release version (expected" \
             "X.Y.Z) - a pull-request or branch build cannot be published."
