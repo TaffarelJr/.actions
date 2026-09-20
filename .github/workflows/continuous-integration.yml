@@ -8,7 +8,7 @@
 # resolve against the checkout, so a pull request tests what it actually
 # changed rather than what was last published.
 #
-# template-sync is not exercised here. It pushes a branch and opens a pull
+# template/sync is not exercised here. It pushes a branch and opens a pull
 # request, so a self-test would either be destructive or need so much mocking
 # that it would stop testing the real thing.
 

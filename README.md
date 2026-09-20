@@ -10,7 +10,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [powershell/test](#powershelltest)
   - [release/draft](#releasedraft)
   - [release/fetch-artifacts](#releasefetch-artifacts)
-  - [template-sync](#template-sync)
+  - [template/sync](#templatesync)
   - [validate-codecov](#validate-codecov)
   - [version/calculate](#versioncalculate)
   - [version/move-aliases](#versionmove-aliases)
@@ -154,7 +154,7 @@ was built from. The search runs against the branch that triggered the
 workflow, or the repo's default branch when triggered from a tag or a
 pull request, since neither of those ever has a build of its own.
 
-### template-sync
+### template/sync
 
 Opens a pull request bringing a parent template's changes down.
 
@@ -164,7 +164,7 @@ Opens a pull request bringing a parent template's changes down.
     fetch-depth: 0
     token: ${{ secrets.TEMPLATE_SYNC_PAT }}
 
-- uses: TaffarelJr/.actions/template-sync@v1
+- uses: TaffarelJr/.actions/template/sync@v1
   with:
     template-url: https://github.com/TaffarelJr/.github.git
     strategy: rebase
