@@ -6,6 +6,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 
 - [Getting Started](#getting-started)
   - [changelog/build](#changelogbuild)
+  - [codecov/upload](#codecovupload)
   - [codecov/validate](#codecovvalidate)
   - [powershell/restore](#powershellrestore)
   - [powershell/test](#powershelltest)
@@ -59,6 +60,31 @@ so the calling repo needs nothing of its own.
 `from-tag` rebuilds the notes for an earlier release instead of the most
 recent one. `to-ref` and `repository` default to the current commit and
 this repo; override them to build notes for somewhere else.
+
+### codecov/upload
+
+Uploads coverage reports found under a folder to Codecov.
+
+```yaml
+- uses: TaffarelJr/.actions/codecov/upload@v1
+  with:
+    token: ${{ secrets.CODECOV_TOKEN }}
+```
+
+Installs `codecovcli` itself — a plain binary, not another action — because
+that is the only way to make a variable number of differently-flagged
+uploads from one composite action: `codecov-action`'s own `flags` input is
+one tag-set per invocation, and a composite action's steps are fixed at
+authoring time, so neither can loop over a folder discovered at runtime.
+
+Every matching report under `path` uploads together, unflagged, by default.
+Pass `group-by-subfolder: true` to upload each immediate subfolder as its
+own flagged upload instead — one flag per build target (a .NET TFM, for
+example), however many exist, with any loose files outside a subfolder
+still going up unflagged. Whether to split at all is a caller's choice, not
+something guessed from folder structure, since a nested layout can mean
+either "these are separate build targets" or just "this is how the files
+happened to be organized."
 
 ### codecov/validate
 
