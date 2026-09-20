@@ -58,7 +58,7 @@ runs:
 
     - name: Take the artifacts CI already built
       id: artifacts
-      uses: TaffarelJr/.actions/fetch-release-artifacts@v1
+      uses: TaffarelJr/.actions/release/fetch-artifacts@v1
       with:
         build-workflow: ${{ inputs.build-workflow }}
         artifact-name: ${{ inputs.artifact-name }}
