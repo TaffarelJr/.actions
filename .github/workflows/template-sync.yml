@@ -52,7 +52,7 @@ jobs:
           token: ${{ env.SYNC_TOKEN }}
 
       - name: Sync from the parent template
-        uses: TaffarelJr/.actions/template-sync@v1
+        uses: TaffarelJr/.actions/template/sync@v1
         with:
           template-url: ${{ vars.TEMPLATE_REPO_URL }}
           strategy: ${{ vars.TEMPLATE_SYNC_STRATEGY }}
