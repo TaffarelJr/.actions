@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+name: Upload Coverage
+description: Uploads coverage reports found under a folder to Codecov.
+
+inputs:
+  path:
+    description: Folder to search for coverage reports, recursively.
+    required: false
+    default: test/coverage
+  pattern:
+    description: Filename pattern for a coverage report.
+    required: false
+    default: "*.cobertura.xml"
+  token:
+    description: Codecov upload token.
+    required: false
+    default: ""
+  group-by-subfolder:
+    description: >-
+      Upload each immediate subfolder of path as its own upload, flagged
+      with that subfolder's name - one flag per build target (a .NET TFM,
+      for example), however many exist. Without this, every report found
+      uploads together in one unflagged group, whatever folder it is in.
+    required: false
+    default: "false"
+  fail-on-error:
+    description: Fail this step when an upload fails, rather than only warning.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install codecovcli
+      id: install
+      shell: pwsh
+      run: |
+        & '${{ github.action_path }}/Install-CodecovCli.ps1'
+
+    - name: Upload the coverage reports
+      shell: pwsh
+      env:
+        CLI_PATH: ${{ steps.install.outputs.path }}
+        COVERAGE_PATH: ${{ inputs.path }}
+        PATTERN: ${{ inputs.pattern }}
+        TOKEN: ${{ inputs.token }}
+        GROUP_BY_SUBFOLDER: ${{ inputs.group-by-subfolder }}
+        FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+      run: |
+        & '${{ github.action_path }}/Publish-Coverage.ps1' `
+          -CliPath $env:CLI_PATH `
+          -Path $env:COVERAGE_PATH `
+          -Pattern $env:PATTERN `
+          -Token $env:TOKEN `
+          -GroupBySubfolder:($env:GROUP_BY_SUBFOLDER -eq 'true') `
+          -FailOnError:($env:FAIL_ON_ERROR -eq 'true')

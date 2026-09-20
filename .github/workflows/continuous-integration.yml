@@ -179,3 +179,11 @@ jobs:
         with:
           name: coverage-${{ matrix.os }}
           path: test/coverage
+
+      # Coverage is identical between OSes (same tests, same source), so only
+      # one leg sends it to Codecov.
+      - name: codecov/upload
+        if: matrix.os == 'ubuntu-latest'
+        uses: ./codecov/upload
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
