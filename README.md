@@ -5,7 +5,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 #### Table of Contents <!-- omit from toc -->
 
 - [Getting Started](#getting-started)
-  - [build-changelog](#build-changelog)
+  - [changelog/build](#changelogbuild)
   - [draft-release](#draft-release)
   - [fetch-release-artifacts](#fetch-release-artifacts)
   - [powershell/restore](#powershellrestore)
@@ -37,13 +37,13 @@ what it built. Override both together if a repo names either differently;
 `draft-release` only relays them to `fetch-release-artifacts`, it does not
 invent its own defaults.
 
-### build-changelog
+### changelog/build
 
 Builds release notes and a changelog from the git history,
 covering everything since the last version tag.
 
 ```yaml
-- uses: TaffarelJr/.actions/build-changelog@v1
+- uses: TaffarelJr/.actions/changelog/build@v1
   with:
     version: ${{ steps.version.outputs.semVer }}
 ```
@@ -143,8 +143,8 @@ and measures line coverage of every other `*.ps1` and `*.psm1` in the repo.
 ```
 
 A test mirrors the path of the file it exercises —
-`build-changelog/New-Changelog-Tasks.psm1` is tested by
-`test/build-changelog/New-Changelog-Tasks.Tests.ps1` — and imports it with
+`changelog/build/New-Changelog-Tasks.psm1` is tested by
+`test/changelog/build/New-Changelog-Tasks.Tests.ps1` — and imports it with
 `Import-SourceModule`, so the two move together. A file worth splitting
 becomes `<Name>.<Aspect>.Tests.ps1` files, which sort together.
 

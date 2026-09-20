@@ -145,7 +145,7 @@ runs:
     #─────────────────────────────────────────────────────────────────────────
 
     - name: Generate the changelog
-      uses: TaffarelJr/.actions/build-changelog@v1
+      uses: TaffarelJr/.actions/changelog/build@v1
       with:
         version: ${{ steps.resolve.outputs.version }}
         output-path: Changelog.md
@@ -205,7 +205,7 @@ runs:
 
     - name: Rewrite the notes with the summary
       if: steps.summary.outcome == 'success' && steps.summary.outputs.response-file != ''
-      uses: TaffarelJr/.actions/build-changelog@v1
+      uses: TaffarelJr/.actions/changelog/build@v1
       with:
         version: ${{ steps.resolve.outputs.version }}
         output-path: Changelog.md
