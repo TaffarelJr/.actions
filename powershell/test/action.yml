@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Runs every *.Tests.ps1 under a folder, each in its own PowerShell process,
+# and measures line coverage of the rest of the repo's PowerShell.
+#
+# The caller must have run powershell/restore first: coverage comes from
+# Pester, and that is what installs it.
+
+name: Test PowerShell Scripts
+description: Runs every *.Tests.ps1 under a folder, each in its own process, with line coverage.
+
+inputs:
+  path:
+    description: Folder holding the tests, searched recursively.
+    required: false
+    default: test
+  output-path:
+    description: Folder to write one Cobertura coverage report per test file into.
+    required: false
+    default: test/coverage
+  show-output:
+    description: Print every file's own output, not only a failing file's.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Run the tests
+      shell: pwsh
+      env:
+        TEST_PATH: ${{ inputs.path }}
+        OUTPUT_PATH: ${{ inputs.output-path }}
+        SHOW_OUTPUT: ${{ inputs.show-output }}
+      run: |
+        $show = $env:SHOW_OUTPUT -eq 'true'
+        & '${{ github.action_path }}/Invoke-Tests.ps1' `
+          -Path $env:TEST_PATH `
+          -OutputPath $env:OUTPUT_PATH `
+          -ShowOutput:$show

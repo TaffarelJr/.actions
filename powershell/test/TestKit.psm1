@@ -1,15 +1,15 @@
 #Requires -Version 7.0
 <#
     The harness every *.Tests.ps1 in this repo shares: assertions and the
-    pass/fail tally, temp folders, console capture, and the stubs that stand in
-    for gh and Read-Host.
+    pass/fail tally, temp folders, console capture, the source under test,
+    and the stubs that stand in for gh, Read-Host, and Install-Module.
 
-    A test file lives beside the module it exercises. It imports this through
-    the TESTKIT_PATH environment variable Run-Tests.ps1 sets, imports its own
-    module by path from $PSScriptRoot, runs its cases, and ends with
-    `exit (Complete-TestRun)`. Run-Tests.ps1 gives each file its own pwsh, so
-    nothing here has to be undone between files - only between the cases
-    within one.
+    A test file lives under test/ at the same relative path as the file it
+    exercises. It imports this through the TESTKIT_PATH environment variable
+    Invoke-Tests.ps1 sets, its source through Import-SourceModule, runs its
+    cases, and ends with `exit (Complete-TestRun)`. Invoke-Tests.ps1 gives
+    each file its own pwsh, so nothing here has to be undone between files -
+    only between the cases within one.
 #>
 
 Set-StrictMode -Version Latest
@@ -18,6 +18,50 @@ $ErrorActionPreference = 'Stop'
 $script:PassCount = 0
 $script:FailCount = 0
 $script:TestRoots = [System.Collections.Generic.List[string]]::new()
+
+#───────────────────────────────────────────────────────────────────────────────
+# Source under test
+#───────────────────────────────────────────────────────────────────────────────
+
+function Get-SourcePath {
+    <#
+    .SYNOPSIS
+        Returns the source folder the calling test file mirrors - the same
+        path under SOURCE_ROOT as the file has under TEST_ROOT - or a file in
+        it when -Name is given.
+    #>
+    param([string]$Name)
+
+    if (-not $env:TEST_ROOT -or -not $env:SOURCE_ROOT) {
+        throw 'Run the tests through powershell/test/Invoke-Tests.ps1; it sets TEST_ROOT and SOURCE_ROOT.'
+    }
+
+    $frames = @(Get-PSCallStack | Where-Object { $_.ScriptName -and $_.ScriptName -ne $PSCommandPath })
+    if (-not $frames) { throw 'Get-SourcePath must be called from a script file, not the console.' }
+
+    $caller = Split-Path -Parent $frames[0].ScriptName
+    $relative = [System.IO.Path]::GetRelativePath($env:TEST_ROOT, $caller)
+    $folder = [System.IO.Path]::GetFullPath((Join-Path $env:SOURCE_ROOT $relative))
+    if ($Name) { return Join-Path $folder $Name }
+    return $folder
+}
+
+function Import-SourceModule {
+    <#
+    .SYNOPSIS
+        Imports the named modules from the source folder the calling test
+        mirrors, into the global scope, replacing any copy already loaded.
+    .DESCRIPTION
+        -Global, because one imported into this module's own scope would be
+        invisible to the test file. Importing again is also the one way to
+        reset a module's private state between cases.
+    #>
+    param([Parameter(Mandatory)][string[]]$Name)
+
+    foreach ($module in $Name) {
+        Import-Module (Get-SourcePath -Name "$module.psm1") -Force -Global
+    }
+}
 
 #───────────────────────────────────────────────────────────────────────────────
 # Assertions
@@ -100,6 +144,7 @@ function Complete-TestRun {
     #>
     Remove-GhStub
     Remove-ReadHostStub
+    Remove-InstallModuleStub
     foreach ($root in $script:TestRoots) { Remove-TestFolder -Path $root }
     $script:TestRoots.Clear()
 
@@ -197,9 +242,9 @@ function Get-Narration {
 
 # A function shadows an executable of the same name, and a module's command
 # lookup falls through to the global scope, so a global function intercepts
-# every gh or Read-Host call the modules make. The stubs keep their state in
-# global variables for the same reason: the functions run in the global scope,
-# where this module's own variables are out of reach.
+# every gh, Read-Host, or Install-Module call the code makes. The stubs keep
+# their state in global variables for the same reason: the functions run in
+# the global scope, where this module's own variables are out of reach.
 
 function Set-GhStub {
     <#
@@ -298,7 +343,78 @@ function Remove-ReadHostStub {
     Remove-Variable -Name ReadHostQueue -Scope Global -ErrorAction SilentlyContinue
 }
 
+function Set-InstallModuleStub {
+    <#
+    .SYNOPSIS
+        Installs the Install-Module stub, replacing any earlier one, and
+        clears the calls it has recorded, so nothing is really installed.
+    .DESCRIPTION
+        PowerShellGet's Install-Module is itself a function, so this replaces
+        the global binding rather than shadowing a cmdlet; the real one is not
+        reachable again in this process, which is fine for one test file.
+    #>
+    $global:InstallModuleStub = @{ Calls = [System.Collections.Generic.List[string]]::new() }
+
+    function global:Install-Module {
+        param(
+            [string]$Name,
+            [string]$MinimumVersion,
+            [string]$Repository,
+            [string]$Scope,
+            [switch]$Force,
+            [switch]$SkipPublisherCheck
+        )
+
+        $call = "$Name $MinimumVersion $Repository $Scope"
+        if ($Force) { $call += ' -Force' }
+        if ($SkipPublisherCheck) { $call += ' -SkipPublisherCheck' }
+        $global:InstallModuleStub.Calls.Add($call)
+    }
+}
+
+function Get-InstallModuleCall {
+    <#
+    .SYNOPSIS
+        Returns every Install-Module call recorded since the stub was last
+        set, one string each, always as an array.
+    #>
+    return , [string[]]$global:InstallModuleStub.Calls
+}
+
+function Remove-InstallModuleStub {
+    <#
+    .SYNOPSIS
+        Uninstalls the Install-Module stub.
+    #>
+    Remove-Item -Path function:global:Install-Module -ErrorAction SilentlyContinue
+    Remove-Variable -Name InstallModuleStub -Scope Global -ErrorAction SilentlyContinue
+}
+
+function New-RequiredModulesManifest {
+    <#
+    .SYNOPSIS
+        Writes a RequiredModules.psd1 listing the given modules under a test
+        root, and returns its path.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][AllowEmptyCollection()][hashtable[]]$Module
+    )
+
+    $entries = foreach ($entry in $Module) {
+        $uri = if ($entry.ContainsKey('Uri')) { $entry.Uri } else { "https://example.test/$($entry.Name)" }
+        "        @{ Name = '$($entry.Name)'; MinimumVersion = '$($entry.MinimumVersion)'; Uri = '$uri' }"
+    }
+
+    $manifestPath = Join-Path $Path "$Name.psd1"
+    Set-Content -LiteralPath $manifestPath -Value @('@{', '    Modules = @(', $entries, '    )', '}')
+    return $manifestPath
+}
+
 Export-ModuleMember -Function @(
+    'Get-SourcePath'
+    'Import-SourceModule'
     'Write-TestSection'
     'Assert-That'
     'Assert-Equal'
@@ -314,4 +430,8 @@ Export-ModuleMember -Function @(
     'Remove-GhStub'
     'Set-ReadHostAnswer'
     'Remove-ReadHostStub'
+    'Set-InstallModuleStub'
+    'Get-InstallModuleCall'
+    'Remove-InstallModuleStub'
+    'New-RequiredModulesManifest'
 )

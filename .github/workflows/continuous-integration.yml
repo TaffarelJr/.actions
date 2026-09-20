@@ -167,5 +167,15 @@ jobs:
         with:
           fetch-depth: 1 # The tests build their own git history where they need one
 
+      - name: Install the PowerShell modules
+        uses: ./powershell/restore
+
       - name: Run the tests
-        uses: ./test-scripts
+        uses: ./powershell/test
+
+      - name: Upload the coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: test/coverage

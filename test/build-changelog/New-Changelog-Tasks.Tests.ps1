@@ -7,11 +7,9 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Run-Tests.ps1 sets TESTKIT_PATH; the fallback lets this file run on its own.
-$testKit = if ($env:TESTKIT_PATH) { $env:TESTKIT_PATH }
-else { Join-Path $PSScriptRoot '..' 'test-scripts' 'TestKit.psm1' }
-Import-Module $testKit -Force
-Import-Module (Join-Path $PSScriptRoot 'New-Changelog-Tasks.psm1') -Force
+if (-not $env:TESTKIT_PATH) { throw 'Run this file through powershell/test/Invoke-Tests.ps1' }
+Import-Module $env:TESTKIT_PATH -Force
+Import-SourceModule 'New-Changelog-Tasks'
 
 $tasks = Get-Module New-Changelog-Tasks
 
