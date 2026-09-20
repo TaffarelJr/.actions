@@ -291,7 +291,7 @@ store, or rotate.
 The permission alone is not enough, though: `draft-release.yml` still
 passes `GH_TOKEN: ${{ github.token }}` explicitly, at the workflow level.
 An environment variable set on a *nested* composite action's own step —
-`draft-release` calling `ai-inference` — does not reliably reach the
+`release/draft` calling `ai-inference` — does not reliably reach the
 action it calls; only one set by the calling workflow cascades down
 through every layer, which is what actually lets the Copilot CLI, several
 layers deep, see the token.
@@ -314,7 +314,7 @@ and the release drafting — lives in the separate
 [`TaffarelJr/.actions`][actionsRepo] repo as composite actions,
 and is shared by every consumer, `.github` included.
 This repo's own `draft-release.yml` is a shell:
-it checks out the history and calls the `draft-release` action,
+it checks out the history and calls the `release/draft` action,
 and is identical in every repo in the chain.
 
 A layer contributes two things, both in its own workflows:

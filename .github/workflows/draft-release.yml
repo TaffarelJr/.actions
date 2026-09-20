@@ -4,7 +4,7 @@
 # See docs/ReleaseProcess.md for why this is the only way in and why a
 # release is a deliberate decision, not something every merge does.
 #
-# Nothing is rebuilt here - it just triggers; draft-release takes the
+# Nothing is rebuilt here - it just triggers; release/draft takes the
 # artifacts CI already produced, for this commit or for a named version.
 #
 # 'uses' can't take an expression, so bumping the major version is an edit
@@ -41,12 +41,12 @@ jobs:
           fetch-depth: 0 # The changelog needs all the history and tags
 
       - name: Draft the release
-        uses: TaffarelJr/.actions/draft-release@v1
+        uses: TaffarelJr/.actions/release/draft@v1
         with:
           version: ${{ inputs.version }}
         env:
           # Must be set here, at the workflow level - an env var set on a
-          # *nested* composite action's own step (draft-release calling
+          # *nested* composite action's own step (release/draft calling
           # ai-inference) does not reliably reach the action it calls; only
           # one set by the calling workflow cascades down through every
           # layer. This is what lets the Copilot CLI, several layers deep,
