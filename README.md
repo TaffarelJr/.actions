@@ -10,6 +10,8 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [draft-release](#draft-release)
   - [fetch-release-artifacts](#fetch-release-artifacts)
   - [move-version-aliases](#move-version-aliases)
+  - [powershell/restore](#powershellrestore)
+  - [powershell/test](#powershelltest)
   - [template-sync](#template-sync)
   - [validate-codecov](#validate-codecov)
 - [Versioning](#versioning)
@@ -159,6 +161,43 @@ Each alias is recomputed from every release tag that exists, not just set
 to whatever tag triggered the run — so publishing an out-of-order backport
 can never move an alias backwards, and a previous bad move corrects itself
 on the next publish.
+
+### powershell/restore
+
+Installs the PowerShell modules the other `powershell/` actions need — today
+that is Pester, which `powershell/test` uses to measure coverage.
+
+```yaml
+- uses: TaffarelJr/.actions/powershell/restore@v1
+```
+
+Run it before `powershell/test`. Anything already installed is left alone.
+The list is `powershell/RequiredModules.psd1`, and a script that needs one of
+those modules checks first: on a developer's machine it offers to install a
+missing one, and in a workflow it fails naming this action and the command,
+so the fix is the same either way.
+
+### powershell/test
+
+Runs every `*.Tests.ps1` under `test/`, each in its own PowerShell process,
+and measures line coverage of every other `*.ps1` and `*.psm1` in the repo.
+
+```yaml
+- uses: TaffarelJr/.actions/powershell/restore@v1
+- uses: TaffarelJr/.actions/powershell/test@v1
+```
+
+A test mirrors the path of the file it exercises —
+`build-changelog/New-Changelog-Tasks.psm1` is tested by
+`test/build-changelog/New-Changelog-Tasks.Tests.ps1` — and imports it with
+`Import-SourceModule`, so the two move together. A file worth splitting
+becomes `<Name>.<Aspect>.Tests.ps1` files, which sort together.
+
+Each test file writes a Cobertura report at the same relative path under
+`test/coverage/` (`output-path`); Codecov merges them, so nothing has to be
+combined here. Coverage is always measured, which is why `powershell/restore`
+has to run first. Pass `path` to search another folder, or `show-output: true`
+to see every file's output rather than only a failing file's.
 
 ### template-sync
 

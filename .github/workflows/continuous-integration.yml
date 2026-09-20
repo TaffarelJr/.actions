@@ -149,3 +149,33 @@ jobs:
             echo "- \`fetch-release-artifacts\` (by version) → found=${{ steps.by-version.outputs.found }}"
             echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  scripts:
+    name: Test the scripts on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    permissions:
+      contents: read # Needed to check out the repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1 # The tests build their own git history where they need one
+
+      - name: Install the PowerShell modules
+        uses: ./powershell/restore
+
+      - name: Run the tests
+        uses: ./powershell/test
+
+      - name: Upload the coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: test/coverage

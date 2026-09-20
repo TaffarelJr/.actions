@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+name: Restore PowerShell Modules
+description: Installs the PowerShell modules the other powershell/ actions need.
+
+runs:
+  using: composite
+  steps:
+    - name: Install the modules
+      shell: pwsh
+      run: |
+        & '${{ github.action_path }}/Restore-Modules.ps1'
