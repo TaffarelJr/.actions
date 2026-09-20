@@ -31,4 +31,4 @@ jobs:
           fetch-depth: 1 # Only the file itself is needed
 
       - name: Validate the Codecov configuration
-        uses: TaffarelJr/.actions/validate-codecov@v1
+        uses: TaffarelJr/.actions/codecov/validate@v1
