@@ -1,3 +1,6 @@
+test/coverage/
+test/results/
+
 #───────────────────────────────────────────────────────────────────────────────
 # Agents
 # https://github.com/github/gitignore/blob/main/Global/Agents.gitignore
