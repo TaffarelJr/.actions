@@ -38,7 +38,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # version/calculate and build-changelog both need the history and tags
+          fetch-depth: 0 # version/calculate and changelog/build both need the history and tags
 
       - name: version/calculate
         id: version
@@ -60,13 +60,13 @@ jobs:
           fi
           echo "version/calculate -> ${SEMVER} / ${TAG}"
 
-      - name: build-changelog
-        uses: ./build-changelog
+      - name: changelog/build
+        uses: ./changelog/build
         with:
           version: ${{ steps.version.outputs.semVer }}
           output-path: Changelog.md
 
-      - name: Assert build-changelog produced both documents
+      - name: Assert changelog/build produced both documents
         shell: bash
         run: |
           test -s Changelog.md \
@@ -75,7 +75,7 @@ jobs:
             || { echo "::error::No folded changelog section."; exit 1; }
           grep -q '<!--' Changelog.md \
             || { echo "::error::No summary placeholder."; exit 1; }
-          echo "build-changelog -> $(wc -l < Changelog.md) lines"
+          echo "changelog/build -> $(wc -l < Changelog.md) lines"
 
       # No CI run has published a 'packages' artifact for this repo, so the
       # expected answer is a clean "found nothing" rather than a failure -
@@ -144,7 +144,7 @@ jobs:
             echo "### Actions exercised"
             echo
             echo "- \`version/calculate\` → \`${SEMVER}\`"
-            echo "- \`build-changelog\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
+            echo "- \`changelog/build\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
             echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
             echo "- \`fetch-release-artifacts\` (by version) → found=${{ steps.by-version.outputs.found }}"
             echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
