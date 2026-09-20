@@ -32,7 +32,7 @@ jobs:
 
     permissions:
       contents: read # Needed to check out the repo
-      actions: read # Needed by fetch-release-artifacts to look for CI runs
+      actions: read # Needed by release/fetch-artifacts to look for CI runs
 
     steps:
       - name: Checkout repo
@@ -80,11 +80,11 @@ jobs:
       # No CI run has published a 'packages' artifact for this repo, so the
       # expected answer is a clean "found nothing" rather than a failure -
       # which is the behaviour a release workflow depends on.
-      - name: fetch-release-artifacts
+      - name: release/fetch-artifacts
         id: artifacts
-        uses: ./fetch-release-artifacts
+        uses: ./release/fetch-artifacts
 
-      - name: Assert fetch-release-artifacts reported rather than failed
+      - name: Assert release/fetch-artifacts reported rather than failed
         shell: bash
         env:
           FOUND: ${{ steps.artifacts.outputs.found }}
@@ -94,13 +94,13 @@ jobs:
             echo "::error::found was '${FOUND}', expected true or false."
             exit 1
           fi
-          echo "fetch-release-artifacts -> found=${FOUND} version='${VERSION}'"
+          echo "release/fetch-artifacts -> found=${FOUND} version='${VERSION}'"
 
       # Nor has any run built a version called 0.0.0-none, so asking for one
       # by name should come back empty-handed the same way.
-      - name: fetch-release-artifacts (by version)
+      - name: release/fetch-artifacts (by version)
         id: by-version
-        uses: ./fetch-release-artifacts
+        uses: ./release/fetch-artifacts
         with:
           version: v0.0.0-none
           search-depth: 3
@@ -114,7 +114,7 @@ jobs:
             echo "::error::found was '${FOUND}', expected false."
             exit 1
           fi
-          echo "fetch-release-artifacts (by version) -> found=${FOUND}"
+          echo "release/fetch-artifacts (by version) -> found=${FOUND}"
 
       # This repo carries the inherited codecov.yml, so the validator should
       # accept it. A failure here is either a real typo in that file or a
@@ -145,8 +145,8 @@ jobs:
             echo
             echo "- \`version/calculate\` → \`${SEMVER}\`"
             echo "- \`changelog/build\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
-            echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
-            echo "- \`fetch-release-artifacts\` (by version) → found=${{ steps.by-version.outputs.found }}"
+            echo "- \`release/fetch-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
+            echo "- \`release/fetch-artifacts\` (by version) → found=${{ steps.by-version.outputs.found }}"
             echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
           } >> "$GITHUB_STEP_SUMMARY"
 

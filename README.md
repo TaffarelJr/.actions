@@ -6,10 +6,10 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 
 - [Getting Started](#getting-started)
   - [changelog/build](#changelogbuild)
-  - [draft-release](#draft-release)
-  - [fetch-release-artifacts](#fetch-release-artifacts)
   - [powershell/restore](#powershellrestore)
   - [powershell/test](#powershelltest)
+  - [release/draft](#releasedraft)
+  - [release/fetch-artifacts](#releasefetch-artifacts)
   - [template-sync](#template-sync)
   - [validate-codecov](#validate-codecov)
   - [version/calculate](#versioncalculate)
@@ -32,9 +32,9 @@ rather than costing a whole extra runner.
 
 `build-workflow` and `artifact-name` both default to `Continuous Integration`
 and `packages` — the convention every repo's own CI is expected to follow so
-`draft-release` and `fetch-release-artifacts` need no configuration to find
+`release/draft` and `release/fetch-artifacts` need no configuration to find
 what it built. Override both together if a repo names either differently;
-`draft-release` only relays them to `fetch-release-artifacts`, it does not
+`release/draft` only relays them to `release/fetch-artifacts`, it does not
 invent its own defaults.
 
 ### changelog/build
@@ -59,63 +59,6 @@ so the calling repo needs nothing of its own.
 `from-tag` rebuilds the notes for an earlier release instead of the most
 recent one. `to-ref` and `repository` default to the current commit and
 this repo; override them to build notes for somewhere else.
-
-### draft-release
-
-Finds the CI run for this exact commit, drafts a GitHub Release from
-it, and attaches whatever that run built.
-
-```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0 # the changelog needs all the history and tags
-
-- uses: TaffarelJr/.actions/draft-release@v1
-  env:
-    GH_TOKEN: ${{ github.token }} # for the AI summary - see below
-```
-
-The release is always a draft: nothing is public until a human opens
-it and presses Publish. The AI summary needs both `copilot-requests: write`
-in the job's `permissions:` and `GH_TOKEN` passed at this level, exactly as
-shown - an env var set any deeper (inside `draft-release` itself, or
-anywhere below it) does not reliably reach the Copilot CLI, a composite
-action several layers down. Without either one (or if the account has no
-Copilot entitlement) the notes keep a placeholder instead of a generated
-summary, same as any other outage.
-
-By default the draft is for the commit the workflow runs from.
-Pass `version` to release an earlier build instead:
-the CI run that produced it is found by the version it recorded,
-so its artifact must still exist, and there is no fallback.
-It must also be newer than the last release,
-since the notes run from that tag to the commit that built it.
-
-### fetch-release-artifacts
-
-Finds the CI run that built this exact commit and downloads its artifacts,
-so a release ships bit-for-bit what was tested instead of rebuilding.
-
-```yaml
-- id: artifacts
-  uses: TaffarelJr/.actions/fetch-release-artifacts@v1
-
-- if: steps.artifacts.outputs.found == 'true'
-  run: echo "Shipping ${{ steps.artifacts.outputs.version }}"
-```
-
-Nothing here fails the caller.
-A missing run, an expired artifact or a missing `version.txt`
-all report through the outputs,
-because a release workflow wants to decide for itself
-whether to fall back or stop.
-
-Pass `version` to find the run that built a particular version instead.
-The recent successful runs are searched newest first, `search-depth` deep,
-reading each artifact's `version.txt`; `sha` reports which commit the match
-was built from. The search runs against the branch that triggered the
-workflow, or the repo's default branch when triggered from a tag or a
-pull request, since neither of those ever has a build of its own.
 
 ### powershell/restore
 
@@ -153,6 +96,63 @@ Each test file writes a Cobertura report at the same relative path under
 combined here. Coverage is always measured, which is why `powershell/restore`
 has to run first. Pass `path` to search another folder, or `show-output: true`
 to see every file's output rather than only a failing file's.
+
+### release/draft
+
+Finds the CI run for this exact commit, drafts a GitHub Release from
+it, and attaches whatever that run built.
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0 # the changelog needs all the history and tags
+
+- uses: TaffarelJr/.actions/release/draft@v1
+  env:
+    GH_TOKEN: ${{ github.token }} # for the AI summary - see below
+```
+
+The release is always a draft: nothing is public until a human opens
+it and presses Publish. The AI summary needs both `copilot-requests: write`
+in the job's `permissions:` and `GH_TOKEN` passed at this level, exactly as
+shown - an env var set any deeper (inside `release/draft` itself, or
+anywhere below it) does not reliably reach the Copilot CLI, a composite
+action several layers down. Without either one (or if the account has no
+Copilot entitlement) the notes keep a placeholder instead of a generated
+summary, same as any other outage.
+
+By default the draft is for the commit the workflow runs from.
+Pass `version` to release an earlier build instead:
+the CI run that produced it is found by the version it recorded,
+so its artifact must still exist, and there is no fallback.
+It must also be newer than the last release,
+since the notes run from that tag to the commit that built it.
+
+### release/fetch-artifacts
+
+Finds the CI run that built this exact commit and downloads its artifacts,
+so a release ships bit-for-bit what was tested instead of rebuilding.
+
+```yaml
+- id: artifacts
+  uses: TaffarelJr/.actions/release/fetch-artifacts@v1
+
+- if: steps.artifacts.outputs.found == 'true'
+  run: echo "Shipping ${{ steps.artifacts.outputs.version }}"
+```
+
+Nothing here fails the caller.
+A missing run, an expired artifact or a missing `version.txt`
+all report through the outputs,
+because a release workflow wants to decide for itself
+whether to fall back or stop.
+
+Pass `version` to find the run that built a particular version instead.
+The recent successful runs are searched newest first, `search-depth` deep,
+reading each artifact's `version.txt`; `sha` reports which commit the match
+was built from. The search runs against the branch that triggered the
+workflow, or the repo's default branch when triggered from a tag or a
+pull request, since neither of those ever has a build of its own.
 
 ### template-sync
 
@@ -262,7 +262,7 @@ Publishing a release moves both automatically; nothing to do by hand.
 
 Every tag here is `v` plus a bare version number, and several actions strip
 or rebuild that prefix independently — `version/calculate`'s own `tag`
-output, `draft-release`'s and `fetch-release-artifacts`'s `version` input,
+output, `release/draft`'s and `release/fetch-artifacts`'s `version` input,
 and `version/move-aliases`'s `tag` input all start from a different kind of
 string, so there is no single place to normalize it once. If the convention
 itself ever changes, grep for `#v` across this repo's `action.yml` files
