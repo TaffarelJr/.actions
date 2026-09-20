@@ -38,13 +38,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # calculate-version and build-changelog both need the history and tags
+          fetch-depth: 0 # version/calculate and build-changelog both need the history and tags
 
-      - name: calculate-version
+      - name: version/calculate
         id: version
-        uses: ./calculate-version
+        uses: ./version/calculate
 
-      - name: Assert calculate-version produced a SemVer
+      - name: Assert version/calculate produced a SemVer
         shell: bash
         env:
           SEMVER: ${{ steps.version.outputs.semVer }}
@@ -58,7 +58,7 @@ jobs:
             echo "::error::tag was '${TAG}', expected 'v${SEMVER}'."
             exit 1
           fi
-          echo "calculate-version -> ${SEMVER} / ${TAG}"
+          echo "version/calculate -> ${SEMVER} / ${TAG}"
 
       - name: build-changelog
         uses: ./build-changelog
@@ -143,7 +143,7 @@ jobs:
           {
             echo "### Actions exercised"
             echo
-            echo "- \`calculate-version\` → \`${SEMVER}\`"
+            echo "- \`version/calculate\` → \`${SEMVER}\`"
             echo "- \`build-changelog\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
             echo "- \`fetch-release-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
             echo "- \`fetch-release-artifacts\` (by version) → found=${{ steps.by-version.outputs.found }}"
