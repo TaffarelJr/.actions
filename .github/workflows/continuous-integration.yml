@@ -119,11 +119,11 @@ jobs:
       # This repo carries the inherited codecov.yml, so the validator should
       # accept it. A failure here is either a real typo in that file or a
       # regression in the action.
-      - name: validate-codecov
+      - name: codecov/validate
         id: codecov
-        uses: ./validate-codecov
+        uses: ./codecov/validate
 
-      - name: Assert validate-codecov accepted the inherited config
+      - name: Assert codecov/validate accepted the inherited config
         shell: bash
         env:
           VALID: ${{ steps.codecov.outputs.valid }}
@@ -132,7 +132,7 @@ jobs:
             echo "::error::valid was '${VALID}', expected true."
             exit 1
           fi
-          echo "validate-codecov -> valid=${VALID}"
+          echo "codecov/validate -> valid=${VALID}"
 
       - name: Summarize
         if: always()
@@ -147,7 +147,7 @@ jobs:
             echo "- \`changelog/build\` → $(wc -l < Changelog.md 2>/dev/null || echo 0) lines"
             echo "- \`release/fetch-artifacts\` → found=${{ steps.artifacts.outputs.found }}"
             echo "- \`release/fetch-artifacts\` (by version) → found=${{ steps.by-version.outputs.found }}"
-            echo "- \`validate-codecov\` → valid=${{ steps.codecov.outputs.valid }}"
+            echo "- \`codecov/validate\` → valid=${{ steps.codecov.outputs.valid }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
   scripts:
