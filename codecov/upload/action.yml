@@ -47,11 +47,11 @@ runs:
         TOKEN: ${{ inputs.token }}
         GROUP_BY_SUBFOLDER: ${{ inputs.group-by-subfolder }}
         FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
-      run: |
-        & '${{ github.action_path }}/Publish-Coverage.ps1' `
-          -CliPath $env:CLI_PATH `
-          -Path $env:COVERAGE_PATH `
-          -Pattern $env:PATTERN `
-          -Token $env:TOKEN `
-          -GroupBySubfolder:($env:GROUP_BY_SUBFOLDER -eq 'true') `
-          -FailOnError:($env:FAIL_ON_ERROR -eq 'true')
+      run: >
+        & '${{ github.action_path }}/Publish-Coverage.ps1'
+        -CliPath $env:CLI_PATH
+        -Path $env:COVERAGE_PATH
+        -Pattern $env:PATTERN
+        -Token $env:TOKEN
+        -GroupBySubfolder:($env:GROUP_BY_SUBFOLDER -eq 'true')
+        -FailOnError:($env:FAIL_ON_ERROR -eq 'true')
