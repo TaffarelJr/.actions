@@ -45,7 +45,7 @@ function Find-RunForCommit {
     )
 
     $runs = @(gh run list --workflow $Workflow --commit $Sha --status success --limit 1 `
-            --json databaseId, headSha | ConvertFrom-Json)
+            --json 'databaseId,headSha' | ConvertFrom-Json)
     if (-not $runs) { return $null }
     return [pscustomobject]@{ RunId = "$($runs[0].databaseId)"; Sha = $runs[0].headSha }
 }
@@ -73,7 +73,7 @@ function Find-RunForVersion {
     )
 
     $runs = @(gh run list --workflow $Workflow --branch $Branch --status success --limit $SearchDepth `
-            --json databaseId, headSha | ConvertFrom-Json)
+            --json 'databaseId,headSha' | ConvertFrom-Json)
 
     foreach ($run in $runs) {
         $scratch = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid())
