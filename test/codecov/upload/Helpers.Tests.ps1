@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 <#
-    Tests for Codecov-Upload-Tasks.psm1: picking the right binary, finding
-    what to upload, building codecovcli's arguments, and the
+    Tests for codecov/upload's Helpers.psm1: picking the right binary,
+    finding what to upload, building codecovcli's arguments, and the
     group-by-subfolder policy that decides what gets flagged.
 #>
 
@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 
 if (-not $env:TESTKIT_PATH) { throw 'Run this file through powershell/test/Invoke-Tests.ps1' }
 Import-Module $env:TESTKIT_PATH -Force
-Import-SourceModule 'Codecov-Upload-Tasks'
+Import-SourceModule 'Helpers'
 
 $root = New-TestRoot -Name 'codecov-upload'
 

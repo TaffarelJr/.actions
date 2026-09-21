@@ -18,7 +18,7 @@ param([string]$OutputPath)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'Codecov-Upload-Tasks.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'Helpers.psm1') -Force
 
 if (-not $OutputPath) {
     $name = Get-CodecovCliFileName -IsWindows $IsWindows
