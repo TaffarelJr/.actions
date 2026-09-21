@@ -1,14 +1,13 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 
-# Repoints vMAJOR and vMAJOR.MINOR at the newest real release in scope, so a
-# consumer pinning @v1 gets each new v1.x.y automatically. A repo's ruleset
-# should exclude these aliases from whatever protects real release tags -
+# Repoints vMAJOR and vMAJOR.MINOR at the newest real release in scope,
+# so a consumer pinning @v1 gets each new v1.x.y automatically.
+# A repo's ruleset should exclude these aliases from
+# whatever protects real release tags -
 # unlike a vX.Y.Z tag, they are meant to move.
 #
-# Recomputes each alias from every vX.Y.Z tag that exists, rather than just
-# moving it to whichever tag triggered this run, so publishing a backport
-# out of order (v1.0.6 after v1.1.0 already shipped) can never move vMAJOR
-# backwards - and a previous bad move corrects itself on the next publish.
+# Works out which two aliases a release tag moves and reads every real tag once,
+# then hands both off to version/move-alias.
 
 name: Move Version Aliases
 description: Repoints the major and major.minor alias tags at a release tag.
@@ -16,8 +15,8 @@ description: Repoints the major and major.minor alias tags at a release tag.
 inputs:
   tag:
     description: >-
-      Release tag to move the aliases to, e.g. v1.4.2. Defaults to the tag of
-      the release that triggered the workflow.
+      Release tag to move the aliases to, e.g. v1.4.2.
+      Defaults to the tag of the release that triggered the workflow.
     required: false
     default: ''
   token:
@@ -28,68 +27,31 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Move the aliases
-      shell: bash
+    - name: Work out which aliases move
+      id: compute
+      shell: pwsh
       env:
-        GH_TOKEN: ${{ inputs.token }}
         TAG: ${{ inputs.tag }}
         EVENT_TAG: ${{ github.event.release.tag_name }}
-        REPO: ${{ github.repository }}
-      run: |
-        tag="${TAG:-$EVENT_TAG}"
+        TOKEN: ${{ inputs.token }}
+        REPOSITORY: ${{ github.repository }}
+      run: >
+        & '${{ github.action_path }}/Resolve-AliasPlan.ps1'
+        -Tag $env:TAG
+        -EventTag $env:EVENT_TAG
+        -Repository $env:REPOSITORY
+        -Token $env:TOKEN
 
-        if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "::error::${tag} is not a vX.Y.Z release tag."
-          exit 1
-        fi
+    - name: Move major alias
+      uses: TaffarelJr/.actions/version/move-alias@v1
+      with:
+        alias: ${{ steps.compute.outputs.alias-major }}
+        tags: ${{ steps.compute.outputs.tags }}
+        token: ${{ inputs.token }}
 
-        IFS='.' read -r major minor _ <<< "${tag#v}"
-
-        # All real release tags, fetched once - an alias is always
-        # recomputed from this list, never just set to whichever tag
-        # triggered the run.
-        all_tags=$(gh api "repos/${REPO}/tags" --paginate --jq '.[].name')
-
-        # Read-then-act, so a transient inconsistency right after GitHub
-        # creates a tag (observed live: a brand-new alias's own existence
-        # check briefly disagreed with reality, turning its first-ever
-        # creation into a "reference does not exist" failure) does not fail
-        # the whole run - retried a few times, from a fresh read each time,
-        # rather than assumed to be a real, permanent problem.
-        move_alias() {
-          local alias="$1" pattern="$2"
-          local newest commit current
-
-          newest=$(printf '%s\n' "$all_tags" | grep -E "$pattern" | sort -V | tail -1)
-          commit=$(gh api "repos/${REPO}/commits/${newest}" --jq .sha)
-
-          current=$(gh api "repos/${REPO}/git/ref/tags/${alias}" --jq .object.sha 2>/dev/null || true)
-          if [ "$current" = "$commit" ]; then
-            echo "::notice::${alias} already at ${newest} (${commit})"
-          elif [ -n "$current" ]; then
-            gh api --method PATCH "repos/${REPO}/git/refs/tags/${alias}" \
-              -f "sha=${commit}" -F force=true >/dev/null
-            echo "::notice::${alias} -> ${newest} (${commit})"
-          else
-            gh api --method POST "repos/${REPO}/git/refs" \
-              -f "ref=refs/tags/${alias}" -f "sha=${commit}" >/dev/null
-            echo "::notice::${alias} -> ${newest} (${commit})"
-          fi
-        }
-
-        for entry in "v${major}:^v${major}\.[0-9]+\.[0-9]+$" \
-          "v${major}.${minor}:^v${major}\.${minor}\.[0-9]+$"; do
-          alias="${entry%%:*}"
-          pattern="${entry#*:}"
-
-          attempt=1
-          until move_alias "$alias" "$pattern"; do
-            if [ "$attempt" -ge 3 ]; then
-              echo "::error::Could not move ${alias} after ${attempt} attempts."
-              exit 1
-            fi
-            echo "::warning::Moving ${alias} failed (attempt ${attempt}); retrying."
-            sleep $((attempt * 2))
-            attempt=$((attempt + 1))
-          done
-        done
+    - name: Move major.minor alias
+      uses: TaffarelJr/.actions/version/move-alias@v1
+      with:
+        alias: ${{ steps.compute.outputs.alias-minor }}
+        tags: ${{ steps.compute.outputs.tags }}
+        token: ${{ inputs.token }}
