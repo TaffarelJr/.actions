@@ -132,10 +132,12 @@ and measures line coverage of every other `*.ps1` and `*.psm1` in the repo.
 ```
 
 A test mirrors the path of the file it exercises —
-`changelog/build/New-Changelog-Tasks.psm1` is tested by
-`test/changelog/build/New-Changelog-Tasks.Tests.ps1` — and imports it with
-`Import-SourceModule`, so the two move together. A file worth splitting
-becomes `<Name>.<Aspect>.Tests.ps1` files, which sort together.
+`changelog/build/Helpers.psm1` is tested by
+`test/changelog/build/Helpers.Tests.ps1` — and imports it with
+`Import-SourceModule`, so the two move together. Every action's own logic
+module is named `Helpers.psm1`; the folder it lives in is what tells them
+apart. A file worth splitting becomes `<Name>.<Aspect>.Tests.ps1` files,
+which sort together.
 
 Each test file writes a Cobertura report at the same relative path under
 `test/coverage/` (`output-path`); Codecov merges them, so nothing has to be
