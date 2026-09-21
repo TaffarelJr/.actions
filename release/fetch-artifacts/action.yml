@@ -70,115 +70,53 @@ runs:
   steps:
     - name: Locate the CI run to release
       id: locate
-      shell: bash
+      shell: pwsh
       env:
-        GH_TOKEN: ${{ inputs.token }}
         WORKFLOW: ${{ inputs.build-workflow }}
         ARTIFACT: ${{ inputs.artifact-name }}
         VERSION_FILE: ${{ inputs.version-file }}
         VERSION: ${{ inputs.version }}
         DEPTH: ${{ inputs.search-depth }}
-        REPO: ${{ github.repository }}
-      run: |
-        version="${VERSION#v}"
-        run_id="" sha=""
+        SHA: ${{ github.sha }}
+        REF: ${{ github.ref }}
+        REF_NAME: ${{ github.ref_name }}
+        REPOSITORY: ${{ github.repository }}
+        TOKEN: ${{ inputs.token }}
+      run: >
+        & '${{ github.action_path }}/Find-ReleaseRun.ps1'
+        -Workflow $env:WORKFLOW
+        -Version $env:VERSION
+        -Artifact $env:ARTIFACT
+        -VersionFile $env:VERSION_FILE
+        -SearchDepth $env:DEPTH
+        -Sha $env:SHA
+        -Ref $env:REF
+        -RefName $env:REF_NAME
+        -Repository $env:REPOSITORY
+        -Token $env:TOKEN
 
-        if [ -z "$version" ]; then
-          # The newest successful run for this exact commit. Anything older
-          # is a different tree; anything unsuccessful was never verified.
-          read -r run_id sha < <(gh run list \
-            --workflow "$WORKFLOW" \
-            --commit "$GITHUB_SHA" \
-            --status success \
-            --limit 1 \
-            --json databaseId,headSha \
-            --jq '.[0] // empty | "\(.databaseId) \(.headSha)"') || true
-          wanted="$GITHUB_SHA"
-        else
-          # A tag or a pull-request merge ref is not a branch a build ever
-          # ran on - GITHUB_REF_NAME would be the tag name or 'N/merge', and
-          # neither has runs. Fall back to the default branch, since that is
-          # where a named-version build actually lives.
-          if [[ "$GITHUB_REF" == refs/heads/* ]]; then
-            branch="$GITHUB_REF_NAME"
-          else
-            branch=$(gh api "repos/${REPO}" --jq .default_branch)
-          fi
-
-          # Only the artifact records which version a run built, so walk the
-          # recent successful runs on this branch, newest first, reading each
-          # one's version file until it matches. A run whose artifact has
-          # expired could not be released anyway, so it is skipped rather
-          # than fatal.
-          while read -r id candidate; do
-            dir=$(mktemp -d)
-            if gh run download "$id" --name "$ARTIFACT" --dir "$dir" >/dev/null 2>&1; then
-              built=$(tr -d '[:space:]' < "$dir/$VERSION_FILE" 2>/dev/null || true)
-              if [ "$built" = "$version" ]; then
-                run_id="$id" sha="$candidate"
-              fi
-            else
-              echo "::notice::Run $id no longer has a '$ARTIFACT' artifact; skipped."
-            fi
-            rm -rf "$dir"
-            if [ -n "$run_id" ]; then break; fi
-          done < <(gh run list \
-            --workflow "$WORKFLOW" \
-            --branch "$branch" \
-            --status success \
-            --limit "$DEPTH" \
-            --json databaseId,headSha \
-            --jq '.[] | "\(.databaseId) \(.headSha)"')
-          wanted="version $version"
-        fi
-
-        if [ -z "$run_id" ]; then
-          echo "::warning::No successful '$WORKFLOW' run found for $wanted."
-          echo "found=false" >> "$GITHUB_OUTPUT"
-          echo "run-id=" >> "$GITHUB_OUTPUT"
-          echo "sha=" >> "$GITHUB_OUTPUT"
-        else
-          echo "Releasing the output of run $run_id, built from $sha"
-          echo "found=true" >> "$GITHUB_OUTPUT"
-          echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-        fi
-
-    # actions/download-artifact raises a job-level ##[error] when the named
-    # artifact does not exist, even with continue-on-error - alarming for
-    # what is, for a repo with nothing to package, the routine case. `gh run
-    # download` reports the same condition as plain text instead, matching
-    # how the version-search branch above already handles a missing one.
     - name: Download the built artifacts
       if: steps.locate.outputs.found == 'true'
-      shell: bash
+      shell: pwsh
       env:
-        GH_TOKEN: ${{ inputs.token }}
         RUN_ID: ${{ steps.locate.outputs.run-id }}
         ARTIFACT: ${{ inputs.artifact-name }}
         DOWNLOAD_PATH: ${{ inputs.path }}
-      run: |
-        if ! gh run download "$RUN_ID" --name "$ARTIFACT" --dir "$DOWNLOAD_PATH" 2>/dev/null; then
-          echo "::notice::Run $RUN_ID has no '$ARTIFACT' artifact (expired, or this repo has nothing to package)."
-        fi
+        TOKEN: ${{ inputs.token }}
+      run: >
+        & '${{ github.action_path }}/Save-BuildArtifact.ps1'
+        -RunId $env:RUN_ID
+        -Artifact $env:ARTIFACT
+        -Path $env:DOWNLOAD_PATH
+        -Token $env:TOKEN
 
     - name: Read the version that was built
       id: read
-      shell: bash
+      shell: pwsh
       env:
         ARTIFACT_PATH: ${{ inputs.path }}
         VERSION_FILE: ${{ inputs.version-file }}
-      run: |
-        # Reporting the version the build stamped in, rather than
-        # recalculating it, is what stops a release from naming a different
-        # number than the binaries it is shipping.
-        file="${ARTIFACT_PATH}/${VERSION_FILE}"
-        if [ -f "$file" ]; then
-          version=$(tr -d '[:space:]' < "$file")
-          echo "Version from the build: $version"
-          rm "$file"
-        else
-          version=""
-          echo "::notice::No ${VERSION_FILE} in the artifact."
-        fi
-        echo "version=${version}" >> "$GITHUB_OUTPUT"
+      run: >
+        & '${{ github.action_path }}/Get-BuildVersion.ps1'
+        -Path $env:ARTIFACT_PATH
+        -VersionFile $env:VERSION_FILE
