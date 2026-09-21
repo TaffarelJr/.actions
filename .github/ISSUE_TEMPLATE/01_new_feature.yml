@@ -1,6 +1,5 @@
 name: ✨ New Feature
 description: Suggest a completely new capability or functionality
-title: '[FEATURE] '
 labels: [new feature]
 assignees: [TaffarelJr]
 body:

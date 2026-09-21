@@ -16,6 +16,9 @@ description: YAML, GitHub Actions, and settings.yml conventions
 - Comment anything non-obvious —
   what a cron expression means, why a version is pinned —
   and link the source when there is one.
+- Wrap a comment or a folded `description:` at natural phrase breaks,
+  one clause per line — same rule as [Markdown][markdownInstructions],
+  and for the same reason: it keeps a one-clause edit a one-line diff.
 
 ## GitHub Actions
 
@@ -38,6 +41,12 @@ description: YAML, GitHub Actions, and settings.yml conventions
   non-literal value, not only ones a value's own source is known to be
   safe, means never having to judge case by case which values are safe to
   skip it for.
+- Write a `run:` step that is one PowerShell statement spread across
+  multiple lines as `run: >` (folded), one parameter per line, rather than
+  `run: |` with a trailing `` ` `` on every one — YAML folds the line
+  breaks into spaces at runtime, so there is nothing to remember to escape.
+  Reserve `run: |` for a script of more than one statement; folding would
+  run them all together on one line instead of keeping them separate.
 
 ## settings.yml
 
@@ -48,6 +57,7 @@ Declare only what differs from the immediate parent.
 
 <!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
+[markdownInstructions]: ./markdown.instructions.md
 [settingsFile]: ../settings.yml
 [vscodeSettingsFile]: ../../.vscode/settings.json
 
