@@ -18,7 +18,7 @@ inputs:
       Release tag to move the aliases to, e.g. v1.4.2. Defaults to the tag of
       the release that triggered the workflow.
     required: false
-    default: ""
+    default: ''
   token:
     description: Token used to read and move the tags.
     required: false

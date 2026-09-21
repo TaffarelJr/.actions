@@ -21,7 +21,7 @@ inputs:
   show-output:
     description: Print every file's own output, not only a failing file's.
     required: false
-    default: "false"
+    default: 'false'
 
 runs:
   using: composite

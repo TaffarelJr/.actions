@@ -22,7 +22,7 @@ inputs:
       only a fallback, so the summary does not announce a number that was not
       used.
     required: false
-    default: "true"
+    default: 'true'
 
 outputs:
   # GitVersion emits far more than this, but every one added here has to be
@@ -88,7 +88,7 @@ runs:
       # from a repo that has nothing to do with .NET.
       uses: gittools/actions/gitversion/setup@v4.7.0
       with:
-        versionSpec: "6.x"
+        versionSpec: '6.x'
 
     - name: Calculate version
       id: gitversion

@@ -11,11 +11,11 @@ inputs:
   pattern:
     description: Filename pattern for a coverage report.
     required: false
-    default: "*.cobertura.xml"
+    default: '*.cobertura.xml'
   token:
     description: Codecov upload token.
     required: false
-    default: ""
+    default: ''
   group-by-subfolder:
     description: >-
       Upload each immediate subfolder of path as its own upload, flagged
@@ -23,11 +23,11 @@ inputs:
       for example), however many exist. Without this, every report found
       uploads together in one unflagged group, whatever folder it is in.
     required: false
-    default: "false"
+    default: 'false'
   fail-on-error:
     description: Fail this step when an upload fails, rather than only warning.
     required: false
-    default: "false"
+    default: 'false'
 
 runs:
   using: composite
