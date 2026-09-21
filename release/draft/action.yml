@@ -39,7 +39,7 @@ inputs:
       v1.4.2. There is no fallback: if no CI run still holds that version's
       artifact, the draft is refused.
     required: false
-    default: ""
+    default: ''
 
 outputs:
   version:
@@ -73,7 +73,7 @@ runs:
       if: steps.artifacts.outputs.version == '' && inputs.version == ''
       uses: TaffarelJr/.actions/version/calculate@v1
       with:
-        summary: "false" # Only a fallback; do not announce it as the version
+        write-to-job-summary: 'false' # Only a fallback; do not announce it as the version
 
     - name: Resolve the version
       id: resolve
@@ -133,7 +133,7 @@ runs:
         if git rev-parse "v$version" >/dev/null 2>&1; then
           echo "::error::v$version is already tagged, so it has already" \
             "been released. Merge something, or raise next-version in" \
-            "GitVersion.yml to choose the next number."
+            "gitversion.yml to choose the next number."
           exit 1
         fi
 
@@ -201,7 +201,7 @@ runs:
       uses: actions/ai-inference@v3
       with:
         prompt-file: prompt.txt
-        model: ""
+        model: ''
 
     - name: Rewrite the notes with the summary
       if: steps.summary.outcome == 'success' && steps.summary.outputs.response-file != ''

@@ -27,7 +27,7 @@ codecov:
 coverage:
   precision: 1
   round: down
-  range: "90...95" # Red below 90, green above 95
+  range: '90...95' # Red below 90, green above 95
 
   status:
     # Coverage across the whole repo, compared against the base commit.
@@ -68,13 +68,13 @@ coverage:
 # match, so '**/test/**' alone would miss a top-level test/ directory. Both
 # forms are listed on purpose.
 ignore:
-  - "test/**"
-  - "tests/**"
-  - "**/test/**"
-  - "**/tests/**"
-  - "build/**"
-  - "scripts/**"
-  - "docs/**"
+  - 'test/**'
+  - 'tests/**'
+  - '**/test/**'
+  - '**/tests/**'
+  - 'build/**'
+  - 'scripts/**'
+  - 'docs/**'
 
 #───────────────────────────────────────────────────────────────────────────────
 # Flags

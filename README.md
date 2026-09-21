@@ -229,7 +229,7 @@ and the PR could never be merged.
 ### version/calculate
 
 Calculates the SemVer version for the current commit,
-using [GitVersion][gitVersion] and the repo's own `GitVersion.yml`.
+using [GitVersion][gitVersion] and the repo's own `gitversion.yml`.
 It reads git history only, so it is not specific to any language.
 
 ```yaml
@@ -248,7 +248,7 @@ which encodes the tag convention — `v` plus the version —
 so no workflow has to build that string itself
 and none of them can disagree about it.
 
-Set `summary: false` where the version is only a fallback,
+Set `write-to-job-summary: false` where the version is only a fallback,
 so the job summary does not announce a number that was not used.
 
 ### version/move-aliases

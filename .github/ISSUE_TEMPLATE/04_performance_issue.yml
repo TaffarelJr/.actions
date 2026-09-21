@@ -1,6 +1,6 @@
 name: ⏱️ Performance issue
 description: Report a performance problem or regression
-title: "[PERFORMANCE] "
+title: '[PERFORMANCE] '
 labels: [performance]
 assignees: [TaffarelJr]
 body:

@@ -19,7 +19,7 @@ on:
   # runs scheduled on the hour queue behind everyone else's
   # (https://crontab.guru/#17_4_*_*_*)
   schedule:
-    - cron: "17 4 * * *"
+    - cron: '17 4 * * *'
 
   workflow_dispatch:
 

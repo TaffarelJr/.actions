@@ -27,13 +27,13 @@ inputs:
       a placeholder comment is written instead, which is invisible once the
       release is published.
     required: false
-    default: ""
+    default: ''
   from-tag:
     description: >-
       Start from this tag instead of the most recent version tag. Use it to
       rebuild the notes for an earlier release.
     required: false
-    default: ""
+    default: ''
   to-ref:
     description: The commit being released.
     required: false

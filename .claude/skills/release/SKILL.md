@@ -11,7 +11,7 @@ allowed-tools: Read Grep Glob Bash
 ---
 
 `docs/ReleaseProcess.md` has the reasoning; this is the runbook. The version
-is decided by the commits and `GitVersion.yml`, and the binaries were built
+is decided by the commits and `gitversion.yml`, and the binaries were built
 by CI when the commit landed — you choose *whether* to release, never what
 number or what bits.
 
@@ -26,7 +26,7 @@ number or what bits.
    bump what. If that is not the version wanted, stop — either CI already
    built the wanted one on `main`, in which case pass it as `version` below,
    or the fix is a commit (`+semver:` in a body, or `next-version` in
-   `GitVersion.yml`), and CI has to build it before a release can carry it.
+   `gitversion.yml`), and CI has to build it before a release can carry it.
 3. If that version is already tagged, stop. It has been published, and the
    workflow refuses to replace it.
 

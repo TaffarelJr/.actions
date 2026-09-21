@@ -26,11 +26,11 @@ inputs:
       v1.4.2. The run that built it is found by the version it recorded, so
       its artifact must still exist.
     required: false
-    default: ""
+    default: ''
   search-depth:
     description: How many recent successful runs to search for that version.
     required: false
-    default: "50"
+    default: '50'
   path:
     description: Directory to download the artifact into.
     required: false

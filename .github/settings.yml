@@ -16,7 +16,7 @@ repository:
   description: Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
 
   # A URL with more information about the repo
-  homepage: ""
+  homepage: ''
 
   # A comma-separated list of topics to set on the repo
   # See https://github.com/topics
