@@ -39,7 +39,7 @@ no tag, nothing published, no downstream workflow fired.
 Deleting a draft leaves no trace, so getting it wrong costs nothing.
 
 **One tool decides the version, everywhere.**
-[GitVersion][gitVersion] reads git history and `GitVersion.yml` only.
+[GitVersion][gitVersion] reads git history and `gitversion.yml` only.
 It does not know or care what the repo is written in,
 so the same configuration governs .NET, Node, and whatever comes next.
 
@@ -141,7 +141,7 @@ chore: restructure the public surface
 ```
 
 **A specific next release** —
-raise `next-version` in [`GitVersion.yml`][gitVersionFile]:
+raise `next-version` in [`gitversion.yml`][gitVersionFile]:
 
 ```yaml
 next-version: 2.0.0
@@ -332,7 +332,7 @@ Everything else works without modification.
 <!-- Source Code URIs (folders first, then files; each alphabetical) -->
 
 [conventions]: ./ConventionalCommits.md
-[gitVersionFile]: ../GitVersion.yml
+[gitVersionFile]: ../.github/gitversion.yml
 
 <!-- GitHub URIs (alphabetical) -->
 

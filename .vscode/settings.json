@@ -50,5 +50,6 @@
   "xml.format.splitAttributes": "preserve",
   "yaml.format.enable": true,
   "yaml.format.printWidth": 0,
-  "yaml.format.proseWrap": "preserve"
+  "yaml.format.proseWrap": "preserve",
+  "yaml.format.singleQuote": true
 }

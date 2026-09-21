@@ -183,9 +183,8 @@ so a file usually announces which one it is.
 ### Verbatim
 
 The shared machinery: the scaffolding scripts, the modules they share and
-their tests, the release workflow, and the version configuration
-itself. A per-layer edit to any of them conflicts on every future change,
-forever.
+their tests, and the release workflow. A per-layer edit to any of them
+conflicts on every future change, forever.
 
 A layer that needs different behavior does not edit these.
 Layer-specific *scaffolding* goes in an additive module of its own.
@@ -229,6 +228,12 @@ the base owns thresholds and reporting,
 a toolchain layer owns the paths it excludes,
 and a layer with projects in it owns the per-project breakdown.
 Resolve by taking the incoming structure and re-applying the local keys.
+
+- **`.github/gitversion.yml` — the base owns every key except
+  `next-version`.** Each repo sets that one for its own bootstrap - the
+  number its first release should be, or the floor while it has none yet.
+  `.actions` starting at `1.0.0` rather than the base's `0.0.1` is this
+  working as intended, not drift to reconcile.
 
 ### Owned locally
 
