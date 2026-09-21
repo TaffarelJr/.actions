@@ -14,6 +14,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [release/fetch-artifacts](#releasefetch-artifacts)
   - [template/sync](#templatesync)
   - [version/calculate](#versioncalculate)
+  - [version/move-alias](#versionmove-alias)
   - [version/move-aliases](#versionmove-aliases)
 - [Versioning](#versioning)
 - [Contributing](#contributing)
@@ -251,6 +252,25 @@ and none of them can disagree about it.
 Set `write-to-job-summary: false` where the version is only a fallback,
 so the job summary does not announce a number that was not used.
 
+### version/move-alias
+
+Repoints one alias tag — `v1` or `v1.4` — at the newest release tag
+that matches it. `version/move-aliases` is what calls this in practice,
+once per alias a release moves; nothing else needs to move a single
+alias on its own.
+
+```yaml
+- uses: TaffarelJr/.actions/version/move-alias@v1
+  with:
+    alias: v1
+    tags: ${{ steps.tags.outputs.list }}
+```
+
+`tags` is every real release tag that exists, one per line — the alias
+is recomputed from that list, never just moved to whichever tag
+triggered the run, so publishing an out-of-order backport can never move
+it backwards.
+
 ### version/move-aliases
 
 Repoints the major and major.minor alias tags at a release,
@@ -266,10 +286,9 @@ so a `release: published` trigger needs nothing else.
 Pass it explicitly for a `workflow_dispatch` re-run, or to move the
 aliases to some other tag by hand.
 
-Each alias is recomputed from every release tag that exists, not just set
-to whatever tag triggered the run — so publishing an out-of-order backport
-can never move an alias backwards, and a previous bad move corrects itself
-on the next publish.
+Works out which two aliases the tag moves and reads the release tag list
+once, then calls `version/move-alias` for each — which is what actually
+recomputes and repoints a single alias, retrying if the move fails.
 
 ## Versioning
 
@@ -289,10 +308,11 @@ Publishing a release moves both automatically; nothing to do by hand.
 Every tag here is `v` plus a bare version number, and several actions strip
 or rebuild that prefix independently — `version/calculate`'s own `tag`
 output, `release/draft`'s and `release/fetch-artifacts`'s `version` input,
-and `version/move-aliases`'s `tag` input all start from a different kind of
-string, so there is no single place to normalize it once. If the convention
-itself ever changes, grep for `#v` across this repo's `action.yml` files
-rather than assuming one of them owns it.
+and `version/move-aliases`'s `tag` input and `version/move-alias`'s `alias`
+input all start from a different kind of string, so there is no single
+place to normalize it once. If the convention itself ever changes, grep
+for `#v` across this repo's `action.yml` files rather than assuming one of
+them owns it.
 
 ## Contributing
 

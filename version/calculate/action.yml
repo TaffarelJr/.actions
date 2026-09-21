@@ -9,8 +9,8 @@
 # GitVersion reads git history and gitversion.yml only,
 # so this action is not specific to any language.
 # The caller must have checked out with fetch-depth: 0 -
-# GitVersion needs the full history and all the tags to work out
-# where the last release was.
+# GitVersion needs the full history and all the tags
+# to work out where the last release was.
 
 name: Calculate Version
 description: Calculates the SemVer version for the current commit.
@@ -18,17 +18,18 @@ description: Calculates the SemVer version for the current commit.
 inputs:
   write-to-job-summary:
     description: >-
-      Write the version to the job summary. Turn this off where the version is
-      only a fallback, so the summary does not announce a number that was not
-      used.
+      Write the version to the job summary.
+      Turn this off where the version is only a fallback,
+      so the summary does not announce a number that was not used.
     required: false
     default: 'true'
 
 outputs:
-  # GitVersion emits far more than this, but every one added here has to be
-  # named by hand - a composite action cannot forward outputs it does not
-  # declare. These are the ones worth having; add to them rather than reaching
-  # past the action.
+  # GitVersion emits far more than this,
+  # but every one added here has to be named by hand -
+  # a composite action cannot forward outputs it does not declare.
+  # These are the ones worth having;
+  # add to them rather than reaching past the action.
   semVer:
     description: The version, e.g. 1.4.0
     value: ${{ steps.gitversion.outputs.semVer }}
@@ -71,9 +72,9 @@ outputs:
   commitDate:
     description: The commit date, e.g. 2026-08-29
     value: ${{ steps.gitversion.outputs.commitDate }}
-  # The only output that is a decision rather than a passthrough: it encodes
-  # the tag convention, so no workflow has to rebuild 'v' + version itself and
-  # none of them can disagree about it.
+  # The only output that is a decision rather than a passthrough:
+  # it encodes the tag convention, so no workflow has to rebuild
+  # 'v' + version itself and none of them can disagree about it.
   tag:
     description: The git tag for this version, e.g. v1.4.0
     value: v${{ steps.gitversion.outputs.semVer }}
@@ -82,9 +83,9 @@ runs:
   using: composite
   steps:
     - name: Install GitVersion
-      # Installed as a dotnet global tool. Every GitHub-hosted runner
-      # already has the .NET SDK, so no setup-dotnet step is needed -
-      # which is what keeps this usable
+      # Installed as a dotnet global tool.
+      # Every GitHub-hosted runner already has the .NET SDK,
+      # so no setup-dotnet step is needed - which is what keeps this usable
       # from a repo that has nothing to do with .NET.
       uses: gittools/actions/gitversion/setup@v4.7.0
       with:
@@ -100,8 +101,8 @@ runs:
       if: inputs.write-to-job-summary == 'true'
       shell: bash
       # Threaded through env rather than interpolated directly into run:,
-      # per yaml.instructions.md - the mitigation for script injection via
-      # untrusted input, applied here as a blanket habit.
+      # per yaml.instructions.md - the mitigation for script injection
+      # via untrusted input, applied here as a blanket habit.
       env:
         SEMVER: ${{ steps.gitversion.outputs.semVer }}
       run: echo "### Version \`${SEMVER}\`" >> "$GITHUB_STEP_SUMMARY"

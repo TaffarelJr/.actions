@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Repoints one alias tag - vN or vN.M - at the newest release tag it matches.
+
+name: Move Version Alias
+description: Repoints one alias tag at the newest release tag it matches.
+
+inputs:
+  alias:
+    description: >-
+      The alias to move: vN for a major alias, vN.M for a major.minor alias.
+    required: true
+  tags:
+    description: >-
+      Every real release tag that exists, one per line.
+      The alias is recomputed from this list,
+      never just moved to whichever tag triggered the run.
+    required: true
+  token:
+    description: Token used to read and move the tag.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Move the alias
+      shell: pwsh
+      env:
+        ALIAS: ${{ inputs.alias }}
+        TAGS: ${{ inputs.tags }}
+        TOKEN: ${{ inputs.token }}
+        REPOSITORY: ${{ github.repository }}
+      run: >
+        & '${{ github.action_path }}/Move-Alias.ps1'
+        -Alias $env:ALIAS
+        -Tag ($env:TAGS -split '\r?\n' | Where-Object { $_ })
+        -Repository $env:REPOSITORY
+        -Token $env:TOKEN

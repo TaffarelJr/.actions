@@ -32,9 +32,8 @@ runs:
         TEST_PATH: ${{ inputs.path }}
         OUTPUT_PATH: ${{ inputs.output-path }}
         SHOW_OUTPUT: ${{ inputs.show-output }}
-      run: |
-        $show = $env:SHOW_OUTPUT -eq 'true'
-        & '${{ github.action_path }}/Invoke-Tests.ps1' `
-          -Path $env:TEST_PATH `
-          -OutputPath $env:OUTPUT_PATH `
-          -ShowOutput:$show
+      run: >
+        & '${{ github.action_path }}/Invoke-Tests.ps1'
+        -Path $env:TEST_PATH
+        -OutputPath $env:OUTPUT_PATH
+        -ShowOutput:($env:SHOW_OUTPUT -eq 'true')
