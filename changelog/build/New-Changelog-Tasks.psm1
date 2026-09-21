@@ -26,7 +26,7 @@ $ErrorActionPreference = 'Stop'
 #───────────────────────────────────────────────────────────────────────────────
 
 # The Conventional Commit types, their display names, and the order they
-# appear in - most important first. Keep in step with GitVersion.yml and
+# appear in - most important first. Keep in step with gitversion.yml and
 # docs/ConventionalCommits.md.
 $script:Categories = [ordered]@{
     'break'    = '💥 Breaking Changes' # Aggregated, not a real type

@@ -229,7 +229,7 @@ and the PR could never be merged.
 ### version/calculate
 
 Calculates the SemVer version for the current commit,
-using [GitVersion][gitVersion] and the repo's own `GitVersion.yml`.
+using [GitVersion][gitVersion] and the repo's own `gitversion.yml`.
 It reads git history only, so it is not specific to any language.
 
 ```yaml
