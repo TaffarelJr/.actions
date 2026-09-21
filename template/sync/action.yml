@@ -86,254 +86,87 @@ runs:
     # `git remote add` and fail ungracefully in the next step.
     - name: Verify configuration
       id: verify
-      shell: bash
+      shell: pwsh
       env:
         TEMPLATE_URL: ${{ inputs.template-url }}
         STRATEGY: ${{ inputs.strategy }}
-      run: |
-        if [[ -z "${TEMPLATE_URL}" ]]; then
-          echo "configured=false" >> "$GITHUB_OUTPUT"
-          echo "::notice::No parent template configured. Nothing to sync."
-          exit 0
-        fi
-
-        # A URL that IS set but points at this repo means the caller inherited
-        # the workflow without retargeting it. Fail loudly rather than
-        # "syncing" a repo with its own history.
-        if [[ "${TEMPLATE_URL}" == *"/${GITHUB_REPOSITORY#*/}.git" ]]; then
-          echo "::error::template-url points at this repo. A base template has no parent to sync from."
-          exit 1
-        fi
-        if [[ "${STRATEGY}" != "rebase" && "${STRATEGY}" != "merge" ]]; then
-          echo "::error::strategy must be 'rebase' or 'merge', not '${STRATEGY}'."
-          exit 1
-        fi
-        echo "configured=true" >> "$GITHUB_OUTPUT"
+        REPOSITORY: ${{ github.repository }}
+      run: >
+        & '${{ github.action_path }}/Test-TemplateConfig.ps1'
+        -TemplateUrl $env:TEMPLATE_URL
+        -Strategy $env:STRATEGY
+        -Repository $env:REPOSITORY
 
     - name: Configure Git
       if: steps.verify.outputs.configured == 'true'
-      shell: bash
+      shell: pwsh
       env:
         GIT_USER_NAME: ${{ inputs.git-user-name }}
         GIT_USER_EMAIL: ${{ inputs.git-user-email }}
       run: |
-        git config user.name "${GIT_USER_NAME}"
-        git config user.email "${GIT_USER_EMAIL}"
+        git config user.name $env:GIT_USER_NAME
+        git config user.email $env:GIT_USER_EMAIL
 
     - name: Fetch the parent template
       if: steps.verify.outputs.configured == 'true'
-      shell: bash
+      shell: pwsh
       env:
         REMOTE: ${{ inputs.remote-name }}
         TEMPLATE_URL: ${{ inputs.template-url }}
         TEMPLATE_BRANCH: ${{ inputs.template-branch }}
       run: |
-        git remote remove "${REMOTE}" 2>/dev/null || true
-        git remote add "${REMOTE}" "${TEMPLATE_URL}"
-        git fetch --prune "${REMOTE}" "${TEMPLATE_BRANCH}"
+        git remote remove $env:REMOTE 2>$null
+        git remote add $env:REMOTE $env:TEMPLATE_URL
+        git fetch --prune $env:REMOTE $env:TEMPLATE_BRANCH
 
-    # Compare by patch, not by commit id. Rebasing gives the parent's commits
-    # new ids on the way down, so asking "which commits are missing" would
-    # report the same work forever; asking "which patches are missing" is
-    # what actually converges.
     - name: Decide what needs doing
       id: plan
       if: steps.verify.outputs.configured == 'true'
-      shell: bash
+      shell: pwsh
       env:
         REMOTE: ${{ inputs.remote-name }}
         TEMPLATE_BRANCH: ${{ inputs.template-branch }}
         BASE_BRANCH: ${{ inputs.base-branch }}
         SYNC_BRANCH: ${{ inputs.sync-branch }}
         STRATEGY: ${{ inputs.strategy }}
-      run: |
-        upstream="${REMOTE}/${TEMPLATE_BRANCH}"
-
-        missing=$(git cherry "origin/${BASE_BRANCH}" "${upstream}" \
-          | grep -c '^+' || true)
-        echo "missing=${missing}" >> "$GITHUB_OUTPUT"
-
-        if [[ "${missing}" == "0" ]]; then
-          echo "proceed=false" >> "$GITHUB_OUTPUT"
-          echo "::notice::Already carries every patch from the template."
-          exit 0
-        fi
-
-        # An open sync branch that is already built on the current base and
-        # already carries every missing patch needs no rebuilding. Leaving it
-        # alone is what preserves a conflict resolution someone pushed to it.
-        if git rev-parse --verify -q "origin/${SYNC_BRANCH}" >/dev/null; then
-          stale=$(git cherry "origin/${SYNC_BRANCH}" "${upstream}" \
-            | grep -c '^+' || true)
-          if [[ "${stale}" == "0" ]] \
-            && git merge-base --is-ancestor \
-              "origin/${BASE_BRANCH}" "origin/${SYNC_BRANCH}"; then
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::The existing ${SYNC_BRANCH} branch is already current."
-            exit 0
-          fi
-        fi
-
-        echo "proceed=true" >> "$GITHUB_OUTPUT"
-        echo "::notice::${missing} patch(es) to bring down via ${STRATEGY}."
+      run: >
+        & '${{ github.action_path }}/Resolve-SyncPlan.ps1'
+        -Remote $env:REMOTE
+        -TemplateBranch $env:TEMPLATE_BRANCH
+        -BaseBranch $env:BASE_BRANCH
+        -SyncBranch $env:SYNC_BRANCH
+        -Strategy $env:STRATEGY
 
     - name: Build the sync branch
       id: build
       if: steps.plan.outputs.proceed == 'true'
-      shell: bash
+      shell: pwsh
       env:
         REMOTE: ${{ inputs.remote-name }}
         TEMPLATE_BRANCH: ${{ inputs.template-branch }}
         BASE_BRANCH: ${{ inputs.base-branch }}
         SYNC_BRANCH: ${{ inputs.sync-branch }}
         STRATEGY: ${{ inputs.strategy }}
-      run: |
-        upstream="${REMOTE}/${TEMPLATE_BRANCH}"
-        base="origin/${BASE_BRANCH}"
-        conflict=false
-        : > /tmp/conflicts.txt
-        : > /tmp/deleted.txt
-        : > /tmp/kept-ours.txt
-
-        # A leaf has no scripts/ of its own. Captured before the merge/rebase
-        # runs, so a new file the parent adds there can be told apart from
-        # one this repo already had.
-        had_scripts=false
-        if git cat-file -e "${base}:scripts" 2>/dev/null; then
-          had_scripts=true
-        fi
-
-        # This repo's own version of these always wins, because the answer
-        # never changes between syncs: settings.yml is a genuinely different
-        # document per repo, and README.md is split by design. Asking a
-        # human the same question every single sync gets nothing.
-        KEEP_OURS=('README.md' '.github/settings.yml')
-
-        # Needed to tell a real rename on the parent's side apart from a
-        # coincidence: the point in history the two sides last agreed on.
-        merge_base=$(git merge-base "${base}" "${upstream}")
-
-        # A file this repo deliberately deleted, which the parent has since
-        # edited, conflicts on every single sync. The repo's answer is already
-        # on record - it is not in the base branch - so honour that instead of
-        # raising the same question forever. Anything still present in the base
-        # is a real conflict and is left for a human.
-        #
-        # A rename on the parent's side complicates that: git reports the
-        # conflict at the NEW path, so "is it in the base?" sees a path that
-        # never existed here and calls the delete safe - even if the parent's
-        # rename paired it with a path this repo already owns under the OLD
-        # name. If this repo's copy of that old name has diverged from the
-        # parent since they last shared history, the delete would erase
-        # content that only looks unfamiliar because of the rename, so that
-        # case is left for a human too.
-        resolve_deletions() {
-          local path keep renamed_from
-          for path in $(git diff --name-only --diff-filter=U); do
-            for keep in "${KEEP_OURS[@]}"; do
-              if [[ "${path}" == "${keep}" ]]; then
-                git checkout --ours -- "${path}"
-                git add -- "${path}"
-                echo "${path}" >> /tmp/kept-ours.txt
-                continue 2
-              fi
-            done
-
-            if git cat-file -e "${base}:${path}" 2>/dev/null; then
-              continue
-            fi
-
-            renamed_from=$(git diff --name-status -M --diff-filter=R \
-                "${merge_base}" "${upstream}" \
-              | awk -v t="${path}" '$3 == t { print $2 }')
-            if [[ -n "${renamed_from}" ]] \
-              && git cat-file -e "${base}:${renamed_from}" 2>/dev/null \
-              && ! git diff --quiet "${merge_base}" "${base}" -- "${renamed_from}"; then
-              continue
-            fi
-
-            git rm -q -f -- "${path}"
-            echo "${path}" >> /tmp/deleted.txt
-          done
-        }
-
-        if [[ "${STRATEGY}" == "rebase" ]]; then
-          # Start at the parent's tip and replay it onto our base. Rebase
-          # drops patches the base already has, so only genuinely new work
-          # lands, and the result is linear.
-          git checkout -B "${SYNC_BRANCH}" "${upstream}"
-          if ! git rebase "${base}"; then
-            while [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; do
-              resolve_deletions
-              # Whatever is still unmerged after that needs a human.
-              remaining=$(git diff --name-only --diff-filter=U)
-              if [[ -n "${remaining}" ]]; then
-                conflict=true
-                echo "${remaining}" >> /tmp/conflicts.txt
-              fi
-              git add -A
-              git -c core.editor=true rebase --continue || true
-            done
-          fi
-        else
-          git checkout -B "${SYNC_BRANCH}" "${base}"
-          if ! git merge --no-edit "${upstream}"; then
-            resolve_deletions
-            remaining=$(git diff --name-only --diff-filter=U)
-            if [[ -n "${remaining}" ]]; then
-              conflict=true
-              echo "${remaining}" >> /tmp/conflicts.txt
-            fi
-            # MERGE_HEAD is still set, so this keeps both parents and git
-            # records that the merge happened. Left uncommitted, the next run
-            # would attempt the same merge again.
-            git add -A
-            git -c core.editor=true commit --no-edit
-          fi
-        fi
-
-        # A file added under scripts/ merges in cleanly - resolve_deletions
-        # never sees it, because nothing conflicted. Swept up here instead,
-        # the same way a conflicted deletion already is, so "a leaf has no
-        # scripts/" stays true without a human having to notice the add.
-        if [[ "${had_scripts}" == "false" && -d scripts ]]; then
-          git rm -rq -- scripts
-          echo "scripts/" >> /tmp/deleted.txt
-          git add -A
-          git -c core.editor=true commit --amend --no-edit
-        fi
-
-        echo "conflict=${conflict}" >> "$GITHUB_OUTPUT"
-
-        deleted=$(sort -u /tmp/deleted.txt | sed '/^$/d' | tr '\n' ' ')
-        if [[ -n "${deleted}" ]]; then
-          echo "deleted=${deleted}" >> "$GITHUB_OUTPUT"
-          echo "::notice::Kept deleted, as this repo already had: ${deleted}"
-        fi
-
-        kept=$(sort -u /tmp/kept-ours.txt | sed '/^$/d' | tr '\n' ' ')
-        if [[ -n "${kept}" ]]; then
-          echo "kept-ours=${kept}" >> "$GITHUB_OUTPUT"
-          echo "::notice::Kept this repo's own version, as always: ${kept}"
-        fi
-
-        if [[ "${conflict}" == "true" ]]; then
-          files=$(sort -u /tmp/conflicts.txt | sed '/^$/d' | tr '\n' ' ')
-          echo "::warning::Conflicts, committed as-is, in: ${files}"
-        fi
+      run: >
+        & '${{ github.action_path }}/New-SyncBranch.ps1'
+        -Remote $env:REMOTE
+        -TemplateBranch $env:TEMPLATE_BRANCH
+        -BaseBranch $env:BASE_BRANCH
+        -SyncBranch $env:SYNC_BRANCH
+        -Strategy $env:STRATEGY
 
     - name: Push the sync branch
       if: steps.plan.outputs.proceed == 'true'
-      shell: bash
+      shell: pwsh
       env:
         SYNC_BRANCH: ${{ inputs.sync-branch }}
-      run: git push --force origin "${SYNC_BRANCH}"
+      run: git push --force origin $env:SYNC_BRANCH
 
     - name: Create or update the pull request
       if: steps.plan.outputs.proceed == 'true'
-      shell: bash
+      shell: pwsh
       env:
-        GH_TOKEN: ${{ inputs.token }}
+        REPOSITORY: ${{ github.repository }}
         BASE_BRANCH: ${{ inputs.base-branch }}
         SYNC_BRANCH: ${{ inputs.sync-branch }}
         TEMPLATE_URL: ${{ inputs.template-url }}
@@ -342,51 +175,16 @@ runs:
         DELETED: ${{ steps.build.outputs.deleted }}
         KEPT_OURS: ${{ steps.build.outputs.kept-ours }}
         MISSING: ${{ steps.plan.outputs.missing }}
-      run: |
-        title="Merge changes from template repo"
-        if [[ "${CONFLICT}" == "true" ]]; then
-          note="⚠️ **Conflicts were committed as-is and must be resolved"
-          note+=" before merging.** See the job log for the file list."
-        else
-          note="✅ Applied cleanly."
-        fi
-
-        deleted_note=""
-        if [[ -n "${DELETED}" ]]; then
-          deleted_note="Left deleted, because this repo had already removed them: \`${DELETED}\`"
-        fi
-
-        kept_note=""
-        if [[ -n "${KEPT_OURS}" ]]; then
-          kept_note="Kept this repo's own version, as always: \`${KEPT_OURS}\`"
-        fi
-
-        body=$(printf '%s\n\n%s\n\n%s\n\n%s\n\n%s\n' \
-          "Automated sync of ${MISSING} patch(es) from \`${TEMPLATE_URL}\` via \`${STRATEGY}\`." \
-          "${note}" \
-          "${deleted_note}" \
-          "${kept_note}" \
-          "This branch is rebuilt whenever either side moves, so it stays current until merged.")
-
-        number=$(gh pr list --repo "${GITHUB_REPOSITORY}" \
-          --head "${SYNC_BRANCH}" --state open \
-          --json number --jq '.[0].number // empty')
-
-        if [[ -z "${number}" ]]; then
-          gh pr create --repo "${GITHUB_REPOSITORY}" \
-            --base "${BASE_BRANCH}" --head "${SYNC_BRANCH}" \
-            --title "${title}" --body "${body}" --label 'template sync'
-          number=$(gh pr list --repo "${GITHUB_REPOSITORY}" \
-            --head "${SYNC_BRANCH}" --state open \
-            --json number --jq '.[0].number // empty')
-        else
-          gh pr edit "${number}" --repo "${GITHUB_REPOSITORY}" \
-            --title "${title}" --body "${body}"
-        fi
-
-        if [[ "${CONFLICT}" == "true" ]]; then
-          gh pr edit "${number}" --repo "${GITHUB_REPOSITORY}" --add-label 'needs fix'
-        else
-          gh pr edit "${number}" --repo "${GITHUB_REPOSITORY}" --remove-label 'needs fix' || true
-        fi
-        echo "::notice::Pull request #${number} is ready for review."
+        TOKEN: ${{ inputs.token }}
+      run: >
+        & '${{ github.action_path }}/Set-SyncPullRequest.ps1'
+        -Repository $env:REPOSITORY
+        -BaseBranch $env:BASE_BRANCH
+        -SyncBranch $env:SYNC_BRANCH
+        -TemplateUrl $env:TEMPLATE_URL
+        -Strategy $env:STRATEGY
+        -Conflict ($env:CONFLICT -eq 'true')
+        -Deleted $env:DELETED
+        -KeptOurs $env:KEPT_OURS
+        -Missing $env:MISSING
+        -Token $env:TOKEN
