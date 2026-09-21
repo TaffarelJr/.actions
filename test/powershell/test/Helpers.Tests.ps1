@@ -1,9 +1,9 @@
 #Requires -Version 7.0
 <#
-    Tests for Invoke-Tests-Tasks.psm1: finding and naming test files, reading
-    a file's tally, deciding what counts as a failure, rendering results, and
-    a real run over a scratch repo with a passing, a failing, and a crashing
-    file.
+    Tests for powershell/test's Helpers.psm1: finding and naming test
+    files, reading a file's tally, deciding what counts as a failure,
+    rendering results, and a real run over a scratch repo with a
+    passing, a failing, and a crashing file.
 #>
 
 Set-StrictMode -Version Latest
@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 
 if (-not $env:TESTKIT_PATH) { throw 'Run this file through powershell/test/Invoke-Tests.ps1' }
 Import-Module $env:TESTKIT_PATH -Force
-Import-SourceModule 'Invoke-Tests-Tasks'
+Import-SourceModule 'Helpers'
 
 $root = New-TestRoot -Name 'invoke-tests'
 
