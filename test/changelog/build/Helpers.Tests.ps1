@@ -1,7 +1,8 @@
 #Requires -Version 7.0
 <#
-    Tests for New-Changelog-Tasks.psm1: parsing commits, grouping them,
-    rendering the notes, and reading tags and history from a real git repo.
+    Tests for changelog/build's Helpers.psm1: parsing commits, grouping
+    them, rendering the notes, and reading tags and history from a real
+    git repo.
 #>
 
 Set-StrictMode -Version Latest
@@ -9,9 +10,9 @@ $ErrorActionPreference = 'Stop'
 
 if (-not $env:TESTKIT_PATH) { throw 'Run this file through powershell/test/Invoke-Tests.ps1' }
 Import-Module $env:TESTKIT_PATH -Force
-Import-SourceModule 'New-Changelog-Tasks'
+Import-SourceModule 'Helpers'
 
-$tasks = Get-Module New-Changelog-Tasks
+$tasks = Get-Module Helpers
 
 function New-Commit {
     <#

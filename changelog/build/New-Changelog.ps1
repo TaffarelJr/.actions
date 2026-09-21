@@ -69,7 +69,13 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'New-Changelog-Tasks.psm1') -Force
+# git writes the commit/field delimiters as UTF-8; a Windows console's
+# default legacy code page mangles them on the way into this process,
+# splitting every commit's fields wrong. Ubuntu runners default to UTF-8
+# already, so this only ever bit a human running the script directly.
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+
+Import-Module (Join-Path $PSScriptRoot 'Helpers.psm1') -Force
 
 # Workflow commands, so the job log and the annotations both say something
 # useful without dragging the interactive console helpers along.
