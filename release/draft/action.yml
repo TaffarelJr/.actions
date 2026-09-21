@@ -73,7 +73,7 @@ runs:
       if: steps.artifacts.outputs.version == '' && inputs.version == ''
       uses: TaffarelJr/.actions/version/calculate@v1
       with:
-        summary: "false" # Only a fallback; do not announce it as the version
+        write-to-job-summary: "false" # Only a fallback; do not announce it as the version
 
     - name: Resolve the version
       id: resolve

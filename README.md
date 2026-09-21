@@ -248,7 +248,7 @@ which encodes the tag convention — `v` plus the version —
 so no workflow has to build that string itself
 and none of them can disagree about it.
 
-Set `summary: false` where the version is only a fallback,
+Set `write-to-job-summary: false` where the version is only a fallback,
 so the job summary does not announce a number that was not used.
 
 ### version/move-aliases

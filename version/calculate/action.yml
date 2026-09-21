@@ -16,7 +16,7 @@ name: Calculate Version
 description: Calculates the SemVer version for the current commit.
 
 inputs:
-  summary:
+  write-to-job-summary:
     description: >-
       Write the version to the job summary. Turn this off where the version is
       only a fallback, so the summary does not announce a number that was not
@@ -97,7 +97,7 @@ runs:
         configFilePath: .github/gitversion.yml
 
     - name: Report version
-      if: inputs.summary == 'true'
+      if: inputs.write-to-job-summary == 'true'
       shell: bash
       env:
         SEMVER: ${{ steps.gitversion.outputs.semVer }}
