@@ -37,7 +37,7 @@
     ./powershell/test/Invoke-Tests.ps1
 
 .EXAMPLE
-    ./powershell/test/Invoke-Tests.ps1 -Filter New-Changelog-Tasks -ShowOutput
+    ./powershell/test/Invoke-Tests.ps1 -Filter TestKit -ShowOutput
 #>
 [CmdletBinding()]
 param(
@@ -51,7 +51,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot '..' 'Common-Modules.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'Invoke-Tests-Tasks.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'Helpers.psm1') -Force
 
 # The files print UTF-8 (the console markers, non-ASCII paths under test);
 # without this a Windows console decodes their output as its legacy code page.
