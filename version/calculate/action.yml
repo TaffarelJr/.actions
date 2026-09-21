@@ -99,6 +99,9 @@ runs:
     - name: Report version
       if: inputs.write-to-job-summary == 'true'
       shell: bash
+      # Threaded through env rather than interpolated directly into run:,
+      # per yaml.instructions.md - the mitigation for script injection via
+      # untrusted input, applied here as a blanket habit.
       env:
         SEMVER: ${{ steps.gitversion.outputs.semVer }}
       run: echo "### Version \`${SEMVER}\`" >> "$GITHUB_STEP_SUMMARY"
