@@ -32,34 +32,11 @@ runs:
   steps:
     - name: Validate the Codecov configuration
       id: validate
-      shell: bash
+      shell: pwsh
       env:
         CONFIG_PATH: ${{ inputs.config-path }}
         ENDPOINT: ${{ inputs.endpoint }}
-      run: |
-        if [[ ! -f "${CONFIG_PATH}" ]]; then
-          echo "valid=false" >> "$GITHUB_OUTPUT"
-          echo "::error::${CONFIG_PATH} not found."
-          exit 1
-        fi
-
-        # --fail-with-body rather than -f: both turn an HTTP error into an exit
-        # code, but -f discards the body, which is the only place the validator
-        # says WHAT is wrong. And the status has to be captured with '||',
-        # because this shell runs with -e and would otherwise abort here,
-        # before anything could be reported.
-        status=0
-        output=$(curl --fail-with-body -sS \
-          --data-binary "@${CONFIG_PATH}" "${ENDPOINT}") || status=$?
-
-        echo "${output}"
-
-        if [[ "${status}" -ne 0 ]]; then
-          echo "valid=false" >> "$GITHUB_OUTPUT"
-          echo "::error file=${CONFIG_PATH}::${CONFIG_PATH} is not valid." \
-            "The validator's reason is in the log above."
-          exit 1
-        fi
-
-        echo "valid=true" >> "$GITHUB_OUTPUT"
-        echo "✅ ${CONFIG_PATH} is valid"
+      run: >
+        & '${{ github.action_path }}/Test-CodecovConfig.ps1'
+        -ConfigPath $env:CONFIG_PATH
+        -Endpoint $env:ENDPOINT
