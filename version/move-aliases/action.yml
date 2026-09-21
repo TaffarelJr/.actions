@@ -1,8 +1,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 
 # Repoints vMAJOR and vMAJOR.MINOR at the newest real release in scope, so a
-# consumer pinning @v1 gets each new v1.x.y automatically. Those aliases are
-# excluded from the 'Protect version tags' ruleset for exactly this reason.
+# consumer pinning @v1 gets each new v1.x.y automatically. A repo's ruleset
+# should exclude these aliases from whatever protects real release tags -
+# unlike a vX.Y.Z tag, they are meant to move.
 #
 # Recomputes each alias from every vX.Y.Z tag that exists, rather than just
 # moving it to whichever tag triggered this run, so publishing a backport
