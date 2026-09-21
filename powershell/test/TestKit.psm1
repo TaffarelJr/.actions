@@ -143,6 +143,7 @@ function Complete-TestRun {
         failure count for the file to `exit` with.
     #>
     Remove-GhStub
+    Remove-WebRequestStub
     Remove-ReadHostStub
     Remove-InstallModuleStub
     foreach ($root in $script:TestRoots) { Remove-TestFolder -Path $root }
@@ -303,6 +304,59 @@ function Remove-GhStub {
     Remove-Variable -Name GhStub -Scope Global -ErrorAction SilentlyContinue
 }
 
+function Set-WebRequestStub {
+    <#
+    .SYNOPSIS
+        Installs the Invoke-WebRequest stub if it is not already, gives it a
+        new handler, and clears the calls it has recorded.
+    .DESCRIPTION
+        The handler receives the call's Uri, Method, and InFile as a
+        hashtable, and returns a hashtable with StatusCode and Content.
+        Throwing from the handler simulates a connection failure.
+    #>
+    param([Parameter(Mandatory)][scriptblock]$Handler)
+
+    $global:WebRequestStub = @{
+        Handler = $Handler
+        Calls   = [System.Collections.Generic.List[hashtable]]::new()
+    }
+
+    if (Get-Command -Name Invoke-WebRequest -CommandType Function -ErrorAction SilentlyContinue) { return }
+
+    function global:Invoke-WebRequest {
+        param(
+            [Parameter(Mandatory)][string]$Uri,
+            [string]$Method = 'GET',
+            [string]$InFile,
+            [switch]$SkipHttpErrorCheck
+        )
+
+        $call = @{ Uri = $Uri; Method = $Method; InFile = $InFile }
+        $global:WebRequestStub.Calls.Add($call)
+        $reply = & $global:WebRequestStub.Handler $call
+        return [pscustomobject]@{ StatusCode = $reply.StatusCode; Content = $reply.Content }
+    }
+}
+
+function Get-WebRequestCall {
+    <#
+    .SYNOPSIS
+        Returns every call recorded since the stub was last set, one
+        hashtable each, always as an array.
+    #>
+    return , [hashtable[]]$global:WebRequestStub.Calls
+}
+
+function Remove-WebRequestStub {
+    <#
+    .SYNOPSIS
+        Uninstalls the Invoke-WebRequest stub, so the real cmdlet is
+        reachable again.
+    #>
+    Remove-Item -Path function:global:Invoke-WebRequest -ErrorAction SilentlyContinue
+    Remove-Variable -Name WebRequestStub -Scope Global -ErrorAction SilentlyContinue
+}
+
 function Set-ReadHostAnswer {
     <#
     .SYNOPSIS
@@ -428,6 +482,9 @@ Export-ModuleMember -Function @(
     'Get-GhCall'
     'Test-GhCall'
     'Remove-GhStub'
+    'Set-WebRequestStub'
+    'Get-WebRequestCall'
+    'Remove-WebRequestStub'
     'Set-ReadHostAnswer'
     'Remove-ReadHostStub'
     'Set-InstallModuleStub'
