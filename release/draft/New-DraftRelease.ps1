@@ -2,13 +2,13 @@
 
 <#
 .SYNOPSIS
-    Creates (or replaces) the draft release for a tag, and attaches
-    whatever artifacts were built.
+    Creates (or replaces) the draft release for a tag,
+    and attaches whatever artifacts were built.
 
 .DESCRIPTION
-    A draft is not idempotent - re-running would add a second draft for
-    the same version - so replaces any existing draft for this tag
-    first.
+    A draft is not idempotent -
+    re-running would add a second draft for the same version -
+    so replaces any existing draft for this tag first.
 
 .PARAMETER Tag
     The release tag to draft, e.g. v1.4.2.

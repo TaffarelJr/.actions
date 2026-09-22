@@ -2,15 +2,17 @@
 
 # Brings a parent template's changes down into this repo as a pull request.
 #
-# Every repo's sync steps are identical; only the parent URL, the schedule and
-# the strategy differ. Keeping the steps here means a repo's own workflow is
-# just those three values plus its triggers, and a fix to the mechanism does
-# not have to walk the whole template chain.
+# Every repo's sync steps are identical;
+# only the parent URL, the schedule and the strategy differ.
+# Keeping the steps here means a repo's own workflow
+# is just those three values plus its triggers,
+# and a fix to the mechanism does not have to walk the whole template chain.
 #
-# The caller must have checked out with fetch-depth: 0, using a token that can
-# push and open pull requests. Pull requests opened with the default
-# GITHUB_TOKEN cannot trigger workflows, so a required status check would never
-# report and the PR could never be merged.
+# The caller must have checked out with fetch-depth: 0,
+# using a token that can push and open pull requests.
+# Pull requests opened with the default GITHUB_TOKEN cannot trigger workflows,
+# so a required status check would never report
+# and the PR could never be merged.
 
 name: Template Sync
 description: Opens a pull request bringing the parent template's changes down.
@@ -21,10 +23,10 @@ inputs:
     required: true
   strategy:
     description: >-
-      rebase for a template layer, replaying the parent's commits so history
-      stays linear and no merge commit of ours can reach a leaf. merge for a
-      leaf, which is the end of the chain and so the only place a merge commit
-      belongs.
+      rebase for a template layer, replaying the parent's commits
+      so history stays linear and no merge commit of ours can reach a leaf.
+      merge for a leaf, which is the end of the chain
+      and so the only place a merge commit belongs.
     required: true
   template-branch:
     description: Branch to sync from in the parent.
@@ -64,9 +66,10 @@ outputs:
     value: ${{ steps.build.outputs.conflict }}
   deleted:
     description: >-
-      Paths kept out of this repo rather than landing from the sync: ones the
-      parent edited that this repo had already deleted, and a scripts/ the
-      parent added where this repo - a leaf - carries none of its own.
+      Paths kept out of this repo rather than landing from the sync:
+      ones the parent edited that this repo had already deleted,
+      and a scripts/ the parent added where this repo - a leaf -
+      carries none of its own.
     value: ${{ steps.build.outputs.deleted }}
   kept-ours:
     description: >-
@@ -80,10 +83,11 @@ outputs:
 runs:
   using: composite
   steps:
-    # A base template has no parent, so its caller leaves template-url empty
-    # rather than omitting it - GitHub Actions only rejects a wholly missing
-    # input, not an empty one. Skip cleanly rather than let an empty URL reach
-    # `git remote add` and fail ungracefully in the next step.
+    # A base template has no parent,
+    # so its caller leaves template-url empty rather than omitting it -
+    # GitHub Actions only rejects a wholly missing input, not an empty one.
+    # Skip cleanly rather than let an empty URL reach `git remote add`
+    # and fail ungracefully in the next step.
     - name: Verify configuration
       id: verify
       shell: pwsh

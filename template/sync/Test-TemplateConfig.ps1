@@ -2,15 +2,17 @@
 
 <#
 .SYNOPSIS
-    Validates the inputs a sync needs before touching anything, and
-    reports whether it is configured to run at all.
+    Validates the inputs a sync needs before touching anything,
+    and reports whether it is configured to run at all.
 
 .DESCRIPTION
-    A base template has no parent, so its caller leaves TemplateUrl
-    empty rather than omitting it - GitHub Actions only rejects a
-    wholly missing input, not an empty one. That case is reported, not
-    an error, so the caller can skip cleanly rather than let an empty
-    URL reach `git remote add` and fail ungracefully later.
+    A base template has no parent,
+    so its caller leaves TemplateUrl empty rather than omitting it -
+    GitHub Actions only rejects a wholly missing input, not an empty one.
+    That case is reported, not an error,
+    so the caller can skip cleanly
+    rather than let an empty URL reach `git remote add`
+    and fail ungracefully later.
 
 .PARAMETER TemplateUrl
     Clone URL of the parent template. Empty means there is no parent.

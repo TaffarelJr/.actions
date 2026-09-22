@@ -2,14 +2,14 @@
 
 <#
 .SYNOPSIS
-    Decides whether there is anything to sync, and reports how many
-    patches would come down.
+    Decides whether there is anything to sync,
+    and reports how many patches would come down.
 
 .DESCRIPTION
-    Compares by patch, not by commit id. Rebasing gives the parent's
-    commits new ids on the way down, so asking "which commits are
-    missing" would report the same work forever; asking "which patches
-    are missing" is what actually converges.
+    Compares by patch, not by commit id.
+    Rebasing gives the parent's commits new ids on the way down,
+    so asking "which commits are missing" would report the same work forever;
+    asking "which patches are missing" is what actually converges.
 
 .PARAMETER Remote
     Name of the parent's git remote.

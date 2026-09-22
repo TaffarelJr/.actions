@@ -2,12 +2,12 @@
 
 # Checks a Codecov configuration file against Codecov's own validator.
 #
-# Codecov silently falls back to its defaults when the file does not parse, so
-# a typo fails nothing - it just quietly stops enforcing the thresholds. This
-# turns that into a failed check instead.
+# Codecov silently falls back to its defaults when the file does not parse,
+# so a typo fails nothing - it just quietly stops enforcing the thresholds.
+# This turns that into a failed check instead.
 #
-# The caller must have checked the repo out; only the file itself is read, so
-# fetch-depth: 1 is enough.
+# The caller must have checked the repo out;
+# only the file itself is read, so fetch-depth: 1 is enough.
 
 name: Validate Codecov
 description: Validates a codecov.yml against Codecov's own validator.

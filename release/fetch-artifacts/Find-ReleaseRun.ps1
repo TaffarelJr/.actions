@@ -2,16 +2,16 @@
 
 <#
 .SYNOPSIS
-    Finds the CI run whose artifact should be released: the one that
-    built this exact commit, or, given a version, the one that built
-    that version.
+    Finds the CI run whose artifact should be released:
+    the one that built this exact commit,
+    or, given a version, the one that built that version.
 
 .PARAMETER Workflow
     Name of the workflow whose artifacts should be released.
 
 .PARAMETER Version
-    Release this earlier build instead of this commit's. Empty means
-    this commit's.
+    Release this earlier build instead of this commit's.
+    Empty means this commit's.
 
 .PARAMETER Artifact
     Artifact holding the built output and version file.
@@ -63,9 +63,8 @@ Import-Module (Join-Path $PSScriptRoot 'Helpers.psm1') -Force
 $requestedVersion = $Version.TrimStart('v')
 
 if ($requestedVersion) {
-    # A tag or a pull-request merge ref is not a branch a build ever ran
-    # on - the ref name would be the tag itself or 'N/merge', and neither
-    # has runs.
+    # A tag or a pull-request merge ref is not a branch a build ever ran on -
+    # the ref name would be the tag itself or 'N/merge', and neither has runs.
     $branch = Resolve-SearchBranch -Ref $Ref -RefName $RefName -Repository $Repository
     $run = Find-RunForVersion -Workflow $Workflow -Branch $branch -Version $requestedVersion `
         -Artifact $Artifact -VersionFile $VersionFile -SearchDepth $SearchDepth

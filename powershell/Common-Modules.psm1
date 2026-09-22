@@ -13,11 +13,12 @@ $script:Repository = 'PSGallery'
 function Get-RequiredModule {
     <#
     .SYNOPSIS
-        Returns the modules the manifest lists - Name, MinimumVersion, and the
-        Uri of their install instructions - always as an array.
+        Returns the modules the manifest lists -
+        Name, MinimumVersion, and the Uri of their install instructions -
+        always as an array.
     .PARAMETER ManifestPath
-        The manifest to read. Defaults to RequiredModules.psd1 beside this
-        module.
+        The manifest to read.
+        Defaults to RequiredModules.psd1 beside this module.
     #>
     param([string]$ManifestPath)
 
@@ -55,8 +56,9 @@ function Test-RequiredModule {
 function Get-ModuleInstallParameter {
     <#
     .SYNOPSIS
-        Returns the Install-Module parameters for a required module, so the
-        command that runs and the command shown to a person are the same one.
+        Returns the Install-Module parameters for a required module,
+        so the command that runs and the command shown to a person
+        are the same one.
     #>
     param(
         [Parameter(Mandatory)][string]$Name,
@@ -64,13 +66,14 @@ function Get-ModuleInstallParameter {
     )
 
     return [ordered]@{
-        Name           = $Name
-        MinimumVersion = "$MinimumVersion"
-        Repository     = $script:Repository
-        Scope          = 'CurrentUser'
-        Force          = $true
-        # Windows ships a signed Pester 3.4; a newer build from the Gallery has
-        # a different publisher, and Install-Module refuses it without this.
+        Name               = $Name
+        MinimumVersion     = "$MinimumVersion"
+        Repository         = $script:Repository
+        Scope              = 'CurrentUser'
+        Force              = $true
+        # Windows ships a signed Pester 3.4;
+        # a newer build from the Gallery has a different publisher,
+        # and Install-Module refuses it without this.
         SkipPublisherCheck = $true
     }
 }
@@ -88,8 +91,14 @@ function Get-ModuleInstallCommand {
     $parameters = Get-ModuleInstallParameter -Name $Name -MinimumVersion $MinimumVersion
     $parts = foreach ($key in $parameters.Keys) {
         $value = $parameters[$key]
-        if ($value -is [bool]) { "-$key" } else { "-$key $value" }
+        if ($value -is [bool]) {
+            "-$key"
+        }
+        else {
+            "-$key $value"
+        }
     }
+
     return "Install-Module $($parts -join ' ')"
 }
 
@@ -117,7 +126,10 @@ function Import-RequiredModule {
 
     $modules = Get-RequiredModule
     $module = $modules | Where-Object Name -eq $Name
-    if (-not $module) { throw "'$Name' is not in $script:ManifestPath" }
+    if (-not $module) {
+        throw "'$Name' is not in $script:ManifestPath"
+    }
+
     Import-Module -Name $Name -MinimumVersion $module.MinimumVersion -Global
 }
 
@@ -128,8 +140,8 @@ function Import-RequiredModule {
 function Test-InteractiveHost {
     <#
     .SYNOPSIS
-        Reports whether a person is at the console: not a CI run, and stdin
-        not redirected.
+        Reports whether a person is at the console:
+        not a CI run, and stdin not redirected.
     #>
     if ($env:CI -or $env:GITHUB_ACTIONS) { return $false }
     return -not [Console]::IsInputRedirected
@@ -138,8 +150,8 @@ function Test-InteractiveHost {
 function Get-MissingModuleMessage {
     <#
     .SYNOPSIS
-        Returns the message for a missing module: what is missing, and the
-        command and Uri to fix it.
+        Returns the message for a missing module:
+        what is missing, and the command and Uri to fix it.
     #>
     param(
         [Parameter(Mandatory)][string]$Name,
@@ -160,12 +172,12 @@ function Get-MissingModuleMessage {
 function Assert-RequiredModule {
     <#
     .SYNOPSIS
-        Makes sure every module in the manifest is installed: offers to install
-        a missing one when a person is present, and fails with the command to
-        run when nobody is.
+        Makes sure every module in the manifest is installed:
+        offers to install a missing one when a person is present,
+        and fails with the command to run when nobody is.
     .PARAMETER ManifestPath
-        The manifest to check. Defaults to RequiredModules.psd1 beside this
-        module.
+        The manifest to check.
+        Defaults to RequiredModules.psd1 beside this module.
     .PARAMETER Interactive
         Whether to offer to install. Defaults to Test-InteractiveHost.
     #>

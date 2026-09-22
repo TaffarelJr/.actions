@@ -18,10 +18,11 @@ inputs:
     default: ''
   group-by-subfolder:
     description: >-
-      Upload each immediate subfolder of path as its own upload, flagged
-      with that subfolder's name - one flag per build target (a .NET TFM,
-      for example), however many exist. Without this, every report found
-      uploads together in one unflagged group, whatever folder it is in.
+      Upload each immediate subfolder of path as its own upload,
+      flagged with that subfolder's name - one flag per build target
+      (a .NET TFM, for example), however many exist.
+      Without this, every report found uploads together in one unflagged group,
+      whatever folder it is in.
     required: false
     default: 'false'
   fail-on-error:

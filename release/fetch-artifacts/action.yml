@@ -1,15 +1,20 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 
-# Finds the CI run that built this exact commit - or, given a version, the
-# run that built that version - and takes its artifacts, so a release ships
-# bit-for-bit what was tested instead of rebuilding.
+# Finds the CI run that built this exact commit -
+# or, given a version, the run that built that version -
+# and takes its artifacts,
+# so a release ships bit-for-bit what was tested instead of rebuilding.
 #
-# Nothing here fails the caller. A missing run, an expired artifact or a
-# missing version.txt all report through the outputs, because a release
-# workflow wants to decide for itself whether to fall back or stop.
+# Nothing here fails the caller.
+# A missing run, an expired artifact or a missing version.txt
+# all report through the outputs,
+# because a release workflow wants to decide for itself
+# whether to fall back or stop.
 
 name: Fetch Release Artifacts
-description: Downloads the artifacts built by the CI run for this commit, or for a given version.
+description: >-
+  Downloads the artifacts built by the CI run for this commit,
+  or for a given version.
 
 inputs:
   build-workflow:
@@ -22,9 +27,10 @@ inputs:
     default: packages
   version:
     description: >-
-      Release this earlier build instead of this commit's, e.g. 1.4.2 or
-      v1.4.2. The run that built it is found by the version it recorded, so
-      its artifact must still exist.
+      Release this earlier build instead of this commit's,
+      e.g. 1.4.2 or v1.4.2.
+      The run that built it is found by the version it recorded,
+      so its artifact must still exist.
     required: false
     default: ''
   search-depth:
@@ -37,8 +43,8 @@ inputs:
     default: artifacts
   version-file:
     description: >-
-      File inside the artifact holding the version that was built. It is
-      deleted after reading, so it is never published as a release asset.
+      File inside the artifact holding the version that was built.
+      It is deleted after reading, so it is never published as a release asset.
     required: false
     default: version.txt
   token:
@@ -58,8 +64,8 @@ outputs:
     value: ${{ steps.locate.outputs.sha }}
   version:
     description: >-
-      The version recorded by that build, or empty when there was no
-      version file to read.
+      The version recorded by that build,
+      or empty when there was no version file to read.
     value: ${{ steps.read.outputs.version }}
   path:
     description: Directory the artifact was downloaded into.

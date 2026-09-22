@@ -1,10 +1,13 @@
 #Requires -Version 7.0
 <#
-    The logic behind syncing a parent template's changes down: validating
-    the configuration, deciding whether there is anything to bring down,
-    building the sync branch (including resolving the deletion side of a
-    conflict), and opening or updating the pull request.
+    The logic behind syncing a parent template's changes down:
+    validating the configuration,
+    deciding whether there is anything to bring down,
+    building the sync branch
+    (including resolving the deletion side of a conflict),
+    and opening or updating the pull request.
 #>
+using namespace System.Collections.Generic
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -16,8 +19,8 @@ $ErrorActionPreference = 'Stop'
 function Test-TemplateUrl {
     <#
     .SYNOPSIS
-        Returns whether a template URL points at this repo - meaning
-        the caller inherited the workflow without retargeting it.
+        Returns whether a template URL points at this repo -
+        meaning the caller inherited the workflow without retargeting it.
     #>
     param(
         [Parameter(Mandatory)][string]$TemplateUrl,
@@ -56,8 +59,7 @@ function Test-RefExists {
 function Test-Ancestor {
     <#
     .SYNOPSIS
-        Returns whether Ancestor is an ancestor of (or equal to)
-        Descendant.
+        Returns whether Ancestor is an ancestor of (or equal to) Descendant.
     #>
     param(
         [Parameter(Mandatory)][string]$Ancestor,
@@ -71,10 +73,10 @@ function Test-Ancestor {
 function Get-MissingPatchCount {
     <#
     .SYNOPSIS
-        Returns how many patches Upstream holds that Base does not, by
-        patch content rather than commit id - a patch already on Base
-        under a different id (e.g. after a rebase) does not count as
-        missing.
+        Returns how many patches Upstream holds that Base does not,
+        by patch content rather than commit id -
+        a patch already on Base under a different id (e.g. after a rebase)
+        does not count as missing.
     #>
     param(
         [Parameter(Mandatory)][string]$Base,
@@ -88,10 +90,11 @@ function Get-MissingPatchCount {
 function Test-SyncBranchCurrent {
     <#
     .SYNOPSIS
-        Returns whether an existing sync branch already carries every
-        patch Base is missing and is built on the current Base - so
-        rebuilding it would just repeat work and discard any conflict
-        resolution someone already pushed to it.
+        Returns whether an existing sync branch
+        already carries every patch Base is missing
+        and is built on the current Base -
+        so rebuilding it would just repeat work
+        and discard any conflict resolution someone already pushed to it.
     #>
     param(
         [Parameter(Mandatory)][string]$Base,
@@ -99,8 +102,14 @@ function Test-SyncBranchCurrent {
         [Parameter(Mandatory)][string]$SyncBranchRef
     )
 
-    if (-not (Test-RefExists -Ref $SyncBranchRef)) { return $false }
-    if ((Get-MissingPatchCount -Base $SyncBranchRef -Upstream $Upstream) -ne 0) { return $false }
+    if (-not (Test-RefExists -Ref $SyncBranchRef)) {
+        return $false
+    }
+
+    if ((Get-MissingPatchCount -Base $SyncBranchRef -Upstream $Upstream) -ne 0) {
+        return $false
+    }
+
     return (Test-Ancestor -Ancestor $Base -Descendant $SyncBranchRef)
 }
 
@@ -161,8 +170,8 @@ function Get-UnmergedPath {
 function Get-RenamedFrom {
     <#
     .SYNOPSIS
-        Returns the path a file was renamed from, between two refs, or
-        '' when it was not renamed there.
+        Returns the path a file was renamed from, between two refs,
+        or '' when it was not renamed there.
     #>
     param(
         [Parameter(Mandatory)][string]$FromRef,
@@ -173,7 +182,9 @@ function Get-RenamedFrom {
     $lines = @(git diff --name-status -M --diff-filter=R $FromRef $ToRef)
     foreach ($line in $lines) {
         $fields = $line -split '\s+'
-        if ($fields.Count -ge 3 -and $fields[2] -eq $Path) { return $fields[1] }
+        if ($fields.Count -ge 3 -and $fields[2] -eq $Path) {
+            return $fields[1]
+        }
     }
     return ''
 }
@@ -181,24 +192,27 @@ function Get-RenamedFrom {
 function Resolve-DeletionAction {
     <#
     .SYNOPSIS
-        Decides what to do with one conflicted path during a sync: keep
-        this repo's own version, treat it as a deletion this repo made
-        on purpose, or leave it for a human to resolve.
+        Decides what to do with one conflicted path during a sync:
+        keep this repo's own version,
+        treat it as a deletion this repo made on purpose,
+        or leave it for a human to resolve.
     .DESCRIPTION
-        A file this repo deliberately deleted, which the parent has
-        since edited, conflicts on every single sync. The repo's answer
-        is already on record - it is not in Base - so honour that
-        instead of raising the same question forever. Anything still
-        present in Base is a real conflict.
+        A file this repo deliberately deleted,
+        which the parent has since edited,
+        conflicts on every single sync.
+        The repo's answer is already on record - it is not in Base -
+        so honour that instead of raising the same question forever.
+        Anything still present in Base is a real conflict.
 
-        A rename on the parent's side complicates that: git reports the
-        conflict at the NEW path, so "is it in Base?" sees a path that
-        never existed here and calls the delete safe - even if the
-        parent's rename paired it with a path this repo already owns
-        under the OLD name. If this repo's copy of that old name has
-        diverged from the parent since they last shared history, the
-        delete would erase content that only looks unfamiliar because
-        of the rename, so that case is left for a human too.
+        A rename on the parent's side complicates that:
+        git reports the conflict at the NEW path,
+        so "is it in Base?" sees a path that never existed here
+        and calls the delete safe - even if the parent's rename
+        paired it with a path this repo already owns under the OLD name.
+        If this repo's copy of that old name
+        has diverged from the parent since they last shared history,
+        the delete would erase content that only looks unfamiliar
+        because of the rename, so that case is left for a human too.
     #>
     param(
         [Parameter(Mandatory)][string]$Path,
@@ -224,10 +238,11 @@ function Resolve-DeletionAction {
 function Resolve-Deletion {
     <#
     .SYNOPSIS
-        Applies Resolve-DeletionAction's decision to every currently
-        conflicted path, and returns which paths were kept as ours and
-        which were treated as deletions. A path left for a human stays
-        conflicted, in neither list.
+        Applies Resolve-DeletionAction's decision
+        to every currently conflicted path,
+        and returns which paths were kept as ours
+        and which were treated as deletions.
+        A path left for a human stays conflicted, in neither list.
     #>
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$KeepOurs,
@@ -236,8 +251,8 @@ function Resolve-Deletion {
         [Parameter(Mandatory)][string]$MergeBase
     )
 
-    $kept = [System.Collections.Generic.List[string]]::new()
-    $deleted = [System.Collections.Generic.List[string]]::new()
+    $kept = [List[string]]::new()
+    $deleted = [List[string]]::new()
 
     foreach ($path in (Get-UnmergedPath)) {
         $action = Resolve-DeletionAction -Path $path -KeepOurs $KeepOurs -Base $Base -Upstream $Upstream -MergeBase $MergeBase
@@ -260,15 +275,16 @@ function Resolve-Deletion {
 function Sync-RebaseBranch {
     <#
     .SYNOPSIS
-        Replays Upstream onto Base by rebase, resolving deletions at
-        each conflict, and returns the result.
+        Replays Upstream onto Base by rebase,
+        resolving deletions at each conflict,
+        and returns the result.
     .DESCRIPTION
-        Rebase drops patches Base already has, so only genuinely new
-        work lands, and the result stays linear.
+        Rebase drops patches Base already has,
+        so only genuinely new work lands, and the result stays linear.
     .OUTPUTS
-        A pscustomobject with Conflict (bool), Kept and Deleted (the
-        paths Resolve-Deletion resolved), and ConflictPath (whatever is
-        still unmerged - left for a human).
+        A pscustomobject with Conflict (bool),
+        Kept and Deleted (the paths Resolve-Deletion resolved),
+        and ConflictPath (whatever is still unmerged - left for a human).
     #>
     param(
         [Parameter(Mandatory)][string]$SyncBranch,
@@ -281,9 +297,9 @@ function Sync-RebaseBranch {
     git checkout -B $SyncBranch $Upstream *> $null
     git rebase $Base *> $null
 
-    $kept = [System.Collections.Generic.List[string]]::new()
-    $deleted = [System.Collections.Generic.List[string]]::new()
-    $conflictPath = [System.Collections.Generic.List[string]]::new()
+    $kept = [List[string]]::new()
+    $deleted = [List[string]]::new()
+    $conflictPath = [List[string]]::new()
 
     while ((Test-Path -LiteralPath '.git/rebase-merge') -or (Test-Path -LiteralPath '.git/rebase-apply')) {
         $resolution = Resolve-Deletion -KeepOurs $KeepOurs -Base $Base -Upstream $Upstream -MergeBase $MergeBase
@@ -306,12 +322,12 @@ function Sync-RebaseBranch {
 function Sync-MergeBranch {
     <#
     .SYNOPSIS
-        Merges Upstream into Base, resolving deletions on conflict, and
-        returns the result.
+        Merges Upstream into Base, resolving deletions on conflict,
+        and returns the result.
     .OUTPUTS
-        A pscustomobject with Conflict (bool), Kept and Deleted (the
-        paths Resolve-Deletion resolved), and ConflictPath (whatever is
-        still unmerged - left for a human).
+        A pscustomobject with Conflict (bool),
+        Kept and Deleted (the paths Resolve-Deletion resolved),
+        and ConflictPath (whatever is still unmerged - left for a human).
     #>
     param(
         [Parameter(Mandatory)][string]$SyncBranch,
@@ -336,9 +352,9 @@ function Sync-MergeBranch {
     $resolution = Resolve-Deletion -KeepOurs $KeepOurs -Base $Base -Upstream $Upstream -MergeBase $MergeBase
     $conflictPath = Get-UnmergedPath
 
-    # MERGE_HEAD is still set, so this keeps both parents and git records
-    # that the merge happened. Left uncommitted, the next run would
-    # attempt the same merge again.
+    # MERGE_HEAD is still set, so this keeps both parents
+    # and git records that the merge happened.
+    # Left uncommitted, the next run would attempt the same merge again.
     git add -A *> $null
     git -c core.editor=true commit --no-edit *> $null
 
@@ -353,15 +369,16 @@ function Sync-MergeBranch {
 function Remove-UnwantedScripts {
     <#
     .SYNOPSIS
-        Removes a scripts/ folder the parent added, when this repo - a
-        leaf - had none of its own before the sync, and amends it into
-        the sync commit that just landed. Returns whether it did.
+        Removes a scripts/ folder the parent added,
+        when this repo - a leaf - had none of its own before the sync,
+        and amends it into the sync commit that just landed.
+        Returns whether it did.
     .DESCRIPTION
-        A file added under scripts/ merges in cleanly - Resolve-Deletion
-        never sees it, because nothing conflicted. Swept up here
-        instead, the same way a conflicted deletion already is, so "a
-        leaf has no scripts/" stays true without a human having to
-        notice the add.
+        A file added under scripts/ merges in cleanly -
+        Resolve-Deletion never sees it, because nothing conflicted.
+        Swept up here instead, the same way a conflicted deletion already is,
+        so "a leaf has no scripts/" stays true
+        without a human having to notice the add.
     #>
     param([Parameter(Mandatory)][bool]$HadScripts)
 
@@ -400,7 +417,7 @@ function Get-SyncPullRequestBody {
         '✅ Applied cleanly.'
     }
 
-    $parts = [System.Collections.Generic.List[string]]::new()
+    $parts = [List[string]]::new()
     $parts.Add("Automated sync of $Missing patch(es) from ``$TemplateUrl`` via ``$Strategy``.")
     $parts.Add($note)
     if ($Deleted) { $parts.Add("Left deleted, because this repo had already removed them: ``$Deleted``") }
@@ -413,23 +430,24 @@ function Get-SyncPullRequestBody {
 function Find-OpenSyncPullRequest {
     <#
     .SYNOPSIS
-        Returns the number of the open pull request from a branch, or
-        '' when there is none.
+        Returns the number of the open pull request from a branch,
+        or '' when there is none.
     #>
     param(
         [Parameter(Mandatory)][string]$Repository,
         [Parameter(Mandatory)][string]$SyncBranch
     )
 
-    return (gh pr list --repo $Repository --head $SyncBranch --state open --json number `
-            --jq '.[0].number // empty' | Select-Object -Last 1)
+    return (gh pr list --repo $Repository --head $SyncBranch --state open --json number --jq '.[0].number // empty' |
+        Select-Object -Last 1)
 }
 
 function Set-SyncPullRequest {
     <#
     .SYNOPSIS
-        Creates the sync pull request, or updates an existing one's
-        title and body, and returns its number.
+        Creates the sync pull request,
+        or updates an existing one's title and body,
+        and returns its number.
     #>
     param(
         [Parameter(Mandatory)][string]$Repository,
@@ -441,8 +459,7 @@ function Set-SyncPullRequest {
     )
 
     if (-not $ExistingNumber) {
-        gh pr create --repo $Repository --base $BaseBranch --head $SyncBranch `
-            --title $Title --body $Body --label 'template sync' *> $null
+        gh pr create --repo $Repository --base $BaseBranch --head $SyncBranch --title $Title --body $Body --label 'template sync' *> $null
         return (Find-OpenSyncPullRequest -Repository $Repository -SyncBranch $SyncBranch)
     }
 
@@ -453,8 +470,8 @@ function Set-SyncPullRequest {
 function Set-SyncPullRequestLabel {
     <#
     .SYNOPSIS
-        Adds or removes the 'needs fix' label to match whether the sync
-        left a conflict.
+        Adds or removes the 'needs fix' label
+        to match whether the sync left a conflict.
     #>
     param(
         [Parameter(Mandatory)][string]$Repository,

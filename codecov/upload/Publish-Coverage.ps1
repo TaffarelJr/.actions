@@ -5,11 +5,12 @@
     Uploads coverage reports found under a folder to Codecov via codecovcli.
 
 .DESCRIPTION
-    Files directly under Path upload as one unflagged group. Without
-    -GroupBySubfolder, every file found - loose or in a subfolder - uploads
-    together in that one group, so a subfolder is just organization, not a
-    split. With -GroupBySubfolder, each immediate subfolder becomes its own
-    upload, flagged with that subfolder's name - one flag per build target
+    Files directly under Path upload as one unflagged group.
+    Without -GroupBySubfolder, every file found - loose or in a subfolder -
+    uploads together in that one group,
+    so a subfolder is just organization, not a split.
+    With -GroupBySubfolder, each immediate subfolder becomes its own upload,
+    flagged with that subfolder's name - one flag per build target
     (a .NET TFM, for example), however many exist.
 
 .PARAMETER CliPath

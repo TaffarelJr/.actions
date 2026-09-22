@@ -5,10 +5,11 @@
     Reads the version a build recorded, and reports it.
 
 .DESCRIPTION
-    Reporting the version the build stamped in, rather than
-    recalculating it, is what stops a release from naming a different
-    number than the binaries it is shipping. The version file is
-    deleted after reading, so it is never published as a release asset.
+    Reporting the version the build stamped in, rather than recalculating it,
+    is what stops a release from naming a different number
+    than the binaries it is shipping.
+    The version file is deleted after reading,
+    so it is never published as a release asset.
 
 .PARAMETER Path
     Folder the artifact was downloaded into.

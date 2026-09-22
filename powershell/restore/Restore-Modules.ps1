@@ -2,8 +2,8 @@
 
 <#
 .SYNOPSIS
-    Installs the PowerShell modules the powershell/ actions need, as listed in
-    RequiredModules.psd1, skipping any already present.
+    Installs the PowerShell modules the powershell/ actions need,
+    as listed in RequiredModules.psd1, skipping any already present.
 
 .PARAMETER ManifestPath
     The manifest to read. Defaults to powershell/RequiredModules.psd1.

@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 <#
-    The logic behind validating a Codecov configuration file: posting it
-    to Codecov's own validator and interpreting the response.
+    The logic behind validating a Codecov configuration file:
+    posting it to Codecov's own validator and interpreting the response.
 #>
 
 Set-StrictMode -Version Latest
@@ -11,12 +11,12 @@ function Invoke-CodecovValidation {
     <#
     .SYNOPSIS
         Posts a Codecov configuration file to Codecov's own validator,
-        returning whether it was accepted and the validator's own
-        response text.
+        returning whether it was accepted
+        and the validator's own response text.
     .DESCRIPTION
-        -SkipHttpErrorCheck reads a rejection's body the same way a
-        success's is read, rather than throwing - the body is the only
-        place the validator says what is wrong.
+        -SkipHttpErrorCheck reads a rejection's body
+        the same way a success's is read, rather than throwing -
+        the body is the only place the validator says what is wrong.
     #>
     param(
         [Parameter(Mandatory)][string]$ConfigPath,

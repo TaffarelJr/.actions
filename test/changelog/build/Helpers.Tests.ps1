@@ -329,6 +329,12 @@ try {
     Assert-That 'the body is carried, so the footer is seen' $since[0].IsBreaking
     Assert-Equal 'and the scope is parsed' 'api' $all[1].Scope
 
+    # Act
+    $none = Get-ChangelogCommit -StartSha $head -EndSha $head
+
+    # Assert
+    Assert-Equal 'no commits in range means an empty list' 0 $none.Count
+
     # Arrange
     git checkout -q -b topic
     $null = Invoke-Commit 'feat: topic work'

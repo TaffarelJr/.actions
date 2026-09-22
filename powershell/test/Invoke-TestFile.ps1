@@ -2,18 +2,20 @@
 
 <#
 .SYNOPSIS
-    Runs one test file under Pester's coverage tracer, writes its Cobertura
-    report, and exits with the file's own exit code.
+    Runs one test file under Pester's coverage tracer,
+    writes its Cobertura report, and exits with the file's own exit code.
 
 .DESCRIPTION
-    Pester is only the coverage collector. The file runs as-is inside one It
-    block: its assertions, its tally line, and its `exit` are its own and pass
-    straight through, which is what Invoke-Tests.ps1 reads. Pester's own
-    output is off so nothing else lands in between.
+    Pester is only the coverage collector.
+    The file runs as-is inside one It block:
+    its assertions, its tally line, and its `exit` are its own
+    and pass straight through, which is what Invoke-Tests.ps1 reads.
+    Pester's own output is off so nothing else lands in between.
 
     This process is single-use, so TESTKIT_PATH, TEST_ROOT, and SOURCE_ROOT
-    are set here rather than inherited: the test file reads them through
-    Get-SourcePath, and nothing has to be restored afterwards.
+    are set here rather than inherited:
+    the test file reads them through Get-SourcePath,
+    and nothing has to be restored afterwards.
 
 .PARAMETER TestFile
     The *.Tests.ps1 to run.
@@ -25,9 +27,9 @@
     The folder the test file's path is mirrored under, through TEST_ROOT.
 
 .PARAMETER SourceRoot
-    The folder the mirror resolves into, through SOURCE_ROOT. Its *.ps1 and
-    *.psm1 files are also what coverage measures, recursively, test files
-    excluded.
+    The folder the mirror resolves into, through SOURCE_ROOT.
+    Its *.ps1 and *.psm1 files are also what coverage measures, recursively,
+    test files excluded.
 
 .PARAMETER OutputPath
     The Cobertura XML to write.

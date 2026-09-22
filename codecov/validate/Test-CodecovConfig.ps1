@@ -2,8 +2,8 @@
 
 <#
 .SYNOPSIS
-    Validates a Codecov configuration file against Codecov's own
-    validator, and reports the result.
+    Validates a Codecov configuration file against Codecov's own validator,
+    and reports the result.
 
 .PARAMETER ConfigPath
     Path to the Codecov configuration file.
