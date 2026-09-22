@@ -10,18 +10,24 @@ $ErrorActionPreference = 'Stop'
 function Get-TestFramework {
     <#
     .SYNOPSIS
-        Returns every target framework any test project under test/
-        declares, always as an array - empty when none of them do,
+        Returns every target framework any test project under test/ declares,
+        always as an array - empty when none of them do,
         which is the cue to run the suite once, unlabeled.
     .DESCRIPTION
         Matches both spellings: a project that targets one framework
-        writes the singular <TargetFramework>, and matching only the
-        plural form would silently report that it targets nothing.
+        writes the singular <TargetFramework>,
+        and matching only the plural form
+        would silently report that it targets nothing.
     #>
     param([Parameter(Mandatory)][pscustomobject]$Context)
 
     $testPath = Join-Path $Context.RepoRoot 'test'
-    $projects = @(Get-ChildItem -LiteralPath $testPath -Filter '*.csproj' -Recurse -File -ErrorAction SilentlyContinue)
+    $projects = @(Get-ChildItem `
+            -LiteralPath $testPath `
+            -Filter '*.csproj' `
+            -Recurse `
+            -File `
+            -ErrorAction SilentlyContinue)
 
     $frameworks = [List[string]]::new()
     foreach ($project in $projects) {
@@ -32,8 +38,8 @@ function Get-TestFramework {
             foreach ($tfm in ($node.InnerText -split ';')) {
                 $trimmed = $tfm.Trim()
 
-                # An MSBuild property can hold a $(...) reference, which is
-                # not a framework name and cannot be run against.
+                # An MSBuild property can hold a $(...) reference,
+                # which is not a framework name and cannot be run against.
                 if (-not $trimmed -or $trimmed.Contains('$(')) {
                     continue
                 }
@@ -70,10 +76,11 @@ function Invoke-Test {
 function Invoke-TestFramework {
     <#
     .SYNOPSIS
-        Runs the solution's tests once - for one target framework, or the
-        single implicit one when Framework is empty - and relocates its
-        coverage report out of the collector's own randomly named
-        subfolder. Skips when there are no projects to test.
+        Runs the solution's tests once - for one target framework,
+        or the single implicit one when Framework is empty -
+        and relocates its coverage report
+        out of the collector's own randomly named subfolder.
+        Skips when there are no projects to test.
     #>
     param(
         [Parameter(Mandatory)][pscustomobject]$Context,
@@ -116,9 +123,11 @@ function Invoke-TestFramework {
     }
 
     if (Test-CIEnvironment) {
-        # LogFilePath must be absolute - a relative one resolves against the
-        # test project's own directory, not --results-directory, so every
-        # framework would write the same file and only the last would survive.
+        # LogFilePath must be absolute -
+        # a relative one resolves against the test project's own directory,
+        # not --results-directory,
+        # so every framework would write the same file
+        # and only the last would survive.
         $junitPath = Join-Path $resultsPath 'results.junit.xml'
         $logger = "junit;LogFilePath=$junitPath;MethodFormat=Full;FailureBodyFormat=Verbose"
         $arguments.AddRange([string[]]@('--logger', $logger))
@@ -135,23 +144,29 @@ function Invoke-TestFramework {
 function Copy-CoverageReport {
     <#
     .SYNOPSIS
-        Copies the coverage collector's report out of its own randomly
-        named subfolder and into CoveragePath, flat - or does nothing
-        when there is none.
+        Copies the coverage collector's report
+        out of its own randomly named subfolder and into CoveragePath, flat -
+        or does nothing when there is none.
     #>
     param(
         [Parameter(Mandatory)][string]$ResultsPath,
         [Parameter(Mandatory)][string]$CoveragePath
     )
 
-    $report = Get-ChildItem -LiteralPath $ResultsPath -Filter 'coverage.cobertura.xml' -Recurse -File -ErrorAction SilentlyContinue |
-        Select-Object -First 1
+    $report = Get-ChildItem `
+        -LiteralPath $ResultsPath `
+        -Filter 'coverage.cobertura.xml' `
+        -Recurse `
+        -File `
+        -ErrorAction SilentlyContinue | Select-Object -First 1
+
     if (-not $report) {
         return
     }
 
     $null = New-Item -ItemType Directory -Force -Path $CoveragePath
-    Copy-Item -LiteralPath $report.FullName -Destination (Join-Path $CoveragePath 'coverage.cobertura.xml') -Force
+    Copy-Item -LiteralPath $report.FullName `
+        -Destination (Join-Path $CoveragePath 'coverage.cobertura.xml') -Force
 }
 
 Export-ModuleMember -Function @(

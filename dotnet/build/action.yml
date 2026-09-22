@@ -1,7 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 
-# Builds a repo's .NET solution,
-# stamping in the version when one is given.
+# Builds a repo's .NET solution, stamping in the version when one is given.
 #
 # The caller must have run dotnet/setup and dotnet/restore first -
 # this action passes --no-restore, and does not install the SDK itself.
