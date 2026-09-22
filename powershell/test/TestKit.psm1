@@ -3,7 +3,7 @@
     The harness every *.Tests.ps1 in this repo shares:
     assertions and the pass/fail tally, temp folders, console capture,
     the source under test, and the stubs that stand in for
-    gh, Read-Host, and Install-Module.
+    gh, dotnet, Read-Host, and Install-Module.
 
     A test file lives under test/
     at the same relative path as the file it exercises.
@@ -155,6 +155,7 @@ function Complete-TestRun {
         and returns the failure count for the file to `exit` with.
     #>
     Remove-GhStub
+    Remove-DotnetStub
     Remove-WebRequestStub
     Remove-ReadHostStub
     Remove-InstallModuleStub
@@ -320,6 +321,64 @@ function Remove-GhStub {
     #>
     Remove-Item -Path function:global:gh -ErrorAction SilentlyContinue
     Remove-Variable -Name GhStub -Scope Global -ErrorAction SilentlyContinue
+}
+
+function Set-DotnetStub {
+    <#
+    .SYNOPSIS
+        Installs the dotnet stub if it is not already, gives it a new handler,
+        and clears the calls it has recorded.
+    .DESCRIPTION
+        The handler receives the argv as a string array
+        and returns a hashtable with Exit (the exit code)
+        and, optionally, Out (the lines to print).
+        Returning nothing at all means "exit 0, print nothing".
+    #>
+    param([Parameter(Mandatory)][scriptblock]$Handler)
+
+    $global:DotnetStub = @{
+        Handler = $Handler
+        Calls   = [List[string]]::new()
+    }
+
+    if (Get-Command -Name dotnet -CommandType Function -ErrorAction SilentlyContinue) { return }
+
+    function global:dotnet {
+        $argv = [string[]]@($args)
+        $global:DotnetStub.Calls.Add($argv -join ' ')
+        $reply = & $global:DotnetStub.Handler $argv
+        if ($null -eq $reply) { $reply = @{} }
+        $global:LASTEXITCODE = if ($reply.ContainsKey('Exit')) { [int]$reply.Exit } else { 0 }
+        if ($reply.ContainsKey('Out')) { $reply.Out | ForEach-Object { $_ } }
+    }
+}
+
+function Get-DotnetCall {
+    <#
+    .SYNOPSIS
+        Returns every dotnet argv recorded since the stub was last set,
+        one string each, always as an array.
+    #>
+    return , [string[]]$global:DotnetStub.Calls
+}
+
+function Test-DotnetCall {
+    <#
+    .SYNOPSIS
+        Reports whether any recorded dotnet argv matches the pattern.
+    #>
+    param([Parameter(Mandatory)][string]$Pattern)
+
+    return [bool](@($global:DotnetStub.Calls) -match $Pattern)
+}
+
+function Remove-DotnetStub {
+    <#
+    .SYNOPSIS
+        Uninstalls the dotnet stub, so the real dotnet is reachable again.
+    #>
+    Remove-Item -Path function:global:dotnet -ErrorAction SilentlyContinue
+    Remove-Variable -Name DotnetStub -Scope Global -ErrorAction SilentlyContinue
 }
 
 function Set-WebRequestStub {
@@ -510,6 +569,10 @@ Export-ModuleMember -Function @(
     'Get-GhCall'
     'Test-GhCall'
     'Remove-GhStub'
+    'Set-DotnetStub'
+    'Get-DotnetCall'
+    'Test-DotnetCall'
+    'Remove-DotnetStub'
     'Set-WebRequestStub'
     'Get-WebRequestCall'
     'Remove-WebRequestStub'
