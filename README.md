@@ -8,6 +8,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [changelog/build](#changelogbuild)
   - [codecov/upload](#codecovupload)
   - [codecov/validate](#codecovvalidate)
+  - [dotnet/setup](#dotnetsetup)
   - [powershell/restore](#powershellrestore)
   - [powershell/test](#powershelltest)
   - [release/draft](#releasedraft)
@@ -105,6 +106,20 @@ it just quietly stops enforcing the thresholds.
 This turns that into a failed check,
 and puts the validator's own reason in the log
 so it says *what* is wrong rather than only *that* something is.
+
+### dotnet/setup
+
+Installs the .NET SDK a repo's `global.json` names,
+using [actions/setup-dotnet][setupDotnet].
+
+```yaml
+- uses: TaffarelJr/.actions/dotnet/setup@v1
+```
+
+A thin wrapper, not a reimplementation — every other `dotnet/*` action
+assumes `dotnet` is already on `PATH` once this step runs. Pass
+`global-json-file` only when `global.json` is not in the repo root;
+`actions/setup-dotnet` already finds it there on its own.
 
 ### powershell/restore
 
@@ -342,3 +357,4 @@ To report a vulnerability, see [SECURITY.md][securityFile].
 <!-- Public URIs (alphabetical) -->
 
 [gitVersion]: https://gitversion.net/docs
+[setupDotnet]: https://github.com/actions/setup-dotnet
