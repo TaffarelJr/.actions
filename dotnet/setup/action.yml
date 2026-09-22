@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Installs the .NET SDK a repo's global.json names,
+# so every other dotnet/* action can assume dotnet is already on PATH.
+#
+# A thin wrapper over actions/setup-dotnet, not a reimplementation -
+# there is no reason to shell out ourselves for something the toolkit
+# already does correctly.
+
+name: Setup .NET
+description: Installs the .NET SDK a repo's global.json names.
+
+inputs:
+  global-json-file:
+    description: >-
+      Path to global.json, when it is not in the repo root.
+      Empty defers entirely to actions/setup-dotnet's own default,
+      which is the repo root.
+    required: false
+    default: ''
+
+outputs:
+  dotnet-version:
+    description: The SDK version that was installed.
+    value: ${{ steps.setup.outputs.dotnet-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install the .NET SDK
+      id: setup
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: ${{ inputs.global-json-file }}
