@@ -348,6 +348,18 @@ try {
     # Assert
     Assert-Equal 'the merge commit itself is dropped, its work is kept' 'topic work' `
         (@($afterMerge.Description) -join ',')
+
+    # Arrange - a blank line between paragraphs is a genuine element of git
+    # log's raw output array, not an absent one.
+    $paragraphs = Invoke-Commit 'chore: two paragraphs' -Body "First paragraph.`n`nSecond paragraph."
+
+    # Act
+    $withBlankLine = Get-ChangelogCommit -StartSha $merged -EndSha $paragraphs
+
+    # Assert
+    Assert-Equal 'a blank line inside a body does not break parsing' 1 $withBlankLine.Count
+    Assert-Equal 'and the whole body, blank line included, is kept' "First paragraph.`n`nSecond paragraph." `
+        $withBlankLine[0].Body
 }
 finally {
     Pop-Location

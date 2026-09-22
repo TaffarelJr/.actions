@@ -245,8 +245,16 @@ function Split-CommitRecord {
     .SYNOPSIS
         Splits git log's raw output into one trimmed,
         non-empty record string per commit, always as an array.
+    .DESCRIPTION
+        A blank line inside a multi-paragraph commit body is a genuine
+        element of Raw, not an absent one - AllowEmptyString is what
+        lets that element bind at all, since a Mandatory string array
+        otherwise rejects the whole array over just one empty element.
     #>
-    param([Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Raw)
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][AllowEmptyString()]
+        [string[]]$Raw
+    )
 
     $records = ($Raw -join "`n") -split $script:CommitDelimiter
     return , @($records | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
