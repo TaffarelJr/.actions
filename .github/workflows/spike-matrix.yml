@@ -1,0 +1,20 @@
+# Throwaway spike - not part of the real workflow set.
+# Confirms whether fromJSON(vars.X) resolves for strategy.matrix the
+# same way it does for a job output. Delete this file and the
+# SPIKE_CI_LANGUAGES repo variable once confirmed either way.
+
+name: Spike CI_LANGUAGES matrix
+
+on:
+  workflow_dispatch:
+
+jobs:
+  spike:
+    name: Spike (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: ${{ fromJSON(vars.SPIKE_CI_LANGUAGES) }}
+    steps:
+      - name: Report the matrix value
+        run: echo "language=${{ matrix.language }}"
