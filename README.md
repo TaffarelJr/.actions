@@ -9,6 +9,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [codecov/upload](#codecovupload)
   - [codecov/validate](#codecovvalidate)
   - [dotnet/build](#dotnetbuild)
+  - [dotnet/pack](#dotnetpack)
   - [dotnet/restore](#dotnetrestore)
   - [dotnet/setup](#dotnetsetup)
   - [dotnet/test](#dotnettest)
@@ -124,6 +125,23 @@ Run `dotnet/setup` and `dotnet/restore` first — this action passes
 `--no-restore`. Pass `version` to stamp `-p:Version`/`-p:PackageVersion`
 into the build; without it, the build carries no version at all. Skips
 cleanly, rather than failing, when the solution has no projects to build.
+
+### dotnet/pack
+
+Packs a repo's .NET solution.
+
+```yaml
+- uses: TaffarelJr/.actions/dotnet/pack@v1
+  with:
+    version: ${{ steps.version.outputs.semVer }}
+```
+
+Run `dotnet/setup` and `dotnet/build` first — this action passes
+`--no-build`. Pass `version` to stamp `-p:Version`/`-p:PackageVersion`
+into the package, same as `dotnet/build`. Skips cleanly, rather than
+failing, both when the solution has no projects and when packing produced
+no `.nupkg` at all — which project is packable is each project's own
+`IsPackable` decision, not something this action guesses at.
 
 ### dotnet/restore
 
