@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Builds a repo's .NET solution,
+# stamping in the version when one is given.
+#
+# The caller must have run dotnet/setup and dotnet/restore first -
+# this action passes --no-restore, and does not install the SDK itself.
+
+name: Build .NET
+description: Builds a repo's .NET solution.
+
+inputs:
+  configuration:
+    description: The build configuration, e.g. Release or Debug.
+    required: false
+    default: Release
+  version:
+    description: >-
+      The version to stamp into the build, e.g. 1.4.0.
+      Empty builds without one.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Build the solution
+      shell: pwsh
+      env:
+        CONFIGURATION: ${{ inputs.configuration }}
+        VERSION: ${{ inputs.version }}
+      run: >
+        & '${{ github.action_path }}/Invoke-Build.ps1'
+        -Configuration $env:CONFIGURATION
+        -Version $env:VERSION

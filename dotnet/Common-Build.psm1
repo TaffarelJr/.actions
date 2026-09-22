@@ -58,6 +58,21 @@ function Get-BuildContext {
     }
 }
 
+function Get-VersionArgument {
+    <#
+    .SYNOPSIS
+        Returns the -p:Version/-p:PackageVersion arguments for a build
+        context's version, or an empty array when it has none to stamp.
+    #>
+    param([Parameter(Mandatory)][pscustomobject]$Context)
+
+    if (-not $Context.Version) {
+        return , @()
+    }
+
+    return , @("-p:Version=$($Context.Version)", "-p:PackageVersion=$($Context.Version)")
+}
+
 function Write-TaskSkip {
     <#
     .SYNOPSIS
@@ -77,5 +92,6 @@ function Write-TaskSkip {
 
 Export-ModuleMember -Function @(
     'Get-BuildContext'
+    'Get-VersionArgument'
     'Write-TaskSkip'
 )
