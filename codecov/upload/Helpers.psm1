@@ -1,9 +1,10 @@
 #Requires -Version 7.0
 <#
     The logic behind installing codecovcli and uploading coverage with it:
-    picking the right binary, finding what to upload, and building the exact
-    arguments codecovcli gets called with.
+    picking the right binary, finding what to upload,
+    and building the exact arguments codecovcli gets called with.
 #>
+using namespace System.Collections.Generic
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -17,9 +18,9 @@ function Get-CodecovCliUrl {
     .SYNOPSIS
         Returns the download URL for the codecovcli binary matching the OS.
     #>
-    param([Parameter(Mandatory)][bool]$IsWindows)
+    param([Parameter(Mandatory)][bool]$Windows)
 
-    if ($IsWindows) { return 'https://cli.codecov.io/latest/windows/codecov.exe' }
+    if ($Windows) { return 'https://cli.codecov.io/latest/windows/codecov.exe' }
     return 'https://cli.codecov.io/latest/linux/codecov'
 }
 
@@ -28,9 +29,9 @@ function Get-CodecovCliFileName {
     .SYNOPSIS
         Returns the file name codecovcli should be saved as, matching the OS.
     #>
-    param([Parameter(Mandatory)][bool]$IsWindows)
+    param([Parameter(Mandatory)][bool]$Windows)
 
-    if ($IsWindows) { return 'codecov.exe' }
+    if ($Windows) { return 'codecov.exe' }
     return 'codecov'
 }
 
@@ -41,13 +42,13 @@ function Get-CodecovCliFileName {
 function Find-CoverageGroup {
     <#
     .SYNOPSIS
-        Returns the coverage files under a folder as upload groups, always as
-        an array.
+        Returns the coverage files under a folder as upload groups,
+        always as an array.
     .DESCRIPTION
-        Files directly under the folder become one group with no Name. Each
-        immediate subfolder that contains a match becomes its own group,
-        named after that subfolder - a caller decides whether that name
-        becomes a flag.
+        Files directly under the folder become one group with no Name.
+        Each immediate subfolder that contains a match
+        becomes its own group, named after that subfolder -
+        a caller decides whether that name becomes a flag.
     #>
     param(
         [Parameter(Mandatory)][string]$Path,
@@ -57,7 +58,7 @@ function Find-CoverageGroup {
     if (-not (Test-Path -LiteralPath $Path)) { return , @() }
     $root = (Resolve-Path -LiteralPath $Path).Path
 
-    $groups = [System.Collections.Generic.List[pscustomobject]]::new()
+    $groups = [List[pscustomobject]]::new()
 
     $loose = @(Get-ChildItem -LiteralPath $root -File -Filter $Pattern)
     if ($loose) {
@@ -82,8 +83,8 @@ function Find-CoverageGroup {
 function Get-UploadArgument {
     <#
     .SYNOPSIS
-        Returns the codecovcli arguments for uploading one group, always as
-        an array.
+        Returns the codecovcli arguments for uploading one group,
+        always as an array.
     .PARAMETER Group
         One result from Find-CoverageGroup.
     .PARAMETER Flag
@@ -100,7 +101,7 @@ function Get-UploadArgument {
         [bool]$FailOnError
     )
 
-    $arguments = [System.Collections.Generic.List[string]]::new()
+    $arguments = [List[string]]::new()
     $arguments.Add('upload-process')
     $arguments.Add('--disable-search')
     if ($Token) { $arguments.AddRange([string[]]@('-t', $Token)) }
@@ -118,10 +119,10 @@ function Get-UploadPlan {
         always as an array, applying the group-by-subfolder policy.
     .DESCRIPTION
         Without grouping, every file across every group uploads once,
-        unflagged - a subfolder found by Find-CoverageGroup is just how
-        the files happened to be organized, not a signal to split by. With
-        grouping, each named group becomes its own flagged upload, and any
-        unnamed (loose-file) group stays unflagged.
+        unflagged - a subfolder found by Find-CoverageGroup is
+        just how the files happened to be organized, not a signal to split by.
+        With grouping, each named group becomes its own flagged upload,
+        and any unnamed (loose-file) group stays unflagged.
     #>
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][array]$Group,

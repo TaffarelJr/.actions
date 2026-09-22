@@ -2,24 +2,28 @@
 
 # Drafts the GitHub Release. Every repo calls this one copy.
 #
-# Nothing is built here. The binaries were built, versioned, and uploaded by
-# a CI run - for this exact commit, or for the version named in 'version';
-# this action finds that run, takes its artifacts, and attaches them. So what
-# gets released is bit-for-bit what was tested, and a release cannot differ
-# from the build that verified it.
+# Nothing is built here.
+# The binaries were built, versioned, and uploaded by a CI run -
+# for this exact commit, or for the version named in 'version';
+# this action finds that run, takes its artifacts, and attaches them.
+# So what gets released is bit-for-bit what was tested,
+# and a release cannot differ from the build that verified it.
 #
-# The release is created as a DRAFT on purpose. No tag exists yet, nothing is
-# published, and nothing downstream fires until a human opens it, reads the
-# notes, and presses Publish. Deleting a draft leaves no trace, so a release
-# that turns out to be wrong costs nothing.
+# The release is created as a DRAFT on purpose.
+# No tag exists yet, nothing is published, and nothing downstream fires
+# until a human opens it, reads the notes, and presses Publish.
+# Deleting a draft leaves no trace,
+# so a release that turns out to be wrong costs nothing.
 #
-# The caller must have checked out with fetch-depth: 0 - the changelog needs
-# all the history and tags. The caller should also grant copilot-requests:
-# write and pass GH_TOKEN: ${{ github.token }} at its own workflow level -
-# an env var set on this action's own steps does not reliably reach
-# ai-inference, a nested composite action call, so it has to come from
-# higher up. Without it the AI summary has no way to authenticate and the
-# notes keep their placeholder - never fatal, just quietly less useful.
+# The caller must have checked out with fetch-depth: 0 -
+# the changelog needs all the history and tags.
+# The caller should also grant copilot-requests: write
+# and pass GH_TOKEN: ${{ github.token }} at its own workflow level -
+# an env var set on this action's own steps
+# does not reliably reach ai-inference, a nested composite action call,
+# so it has to come from higher up.
+# Without it the AI summary has no way to authenticate
+# and the notes keep their placeholder - never fatal, just quietly less useful.
 
 name: Draft Release
 description: Drafts a GitHub Release from the CI artifacts built for this commit.
@@ -35,9 +39,10 @@ inputs:
     default: packages
   version:
     description: >-
-      Release this earlier build instead of this commit's, e.g. 1.4.2 or
-      v1.4.2. There is no fallback: if no CI run still holds that version's
-      artifact, the draft is refused.
+      Release this earlier build instead of this commit's,
+      e.g. 1.4.2 or v1.4.2.
+      There is no fallback: if no CI run still holds that version's artifact,
+      the draft is refused.
     required: false
     default: ''
 
@@ -75,10 +80,10 @@ runs:
       with:
         write-to-job-summary: 'false' # Only a fallback; do not announce it as the version
 
-    # The caller's checkout with fetch-depth: 0 already fetches every tag
-    # (its default refspec includes refs/tags/*), which is what lets
-    # Resolve-DraftVersion check an existing tag with no fetch-tags input
-    # needed.
+    # The caller's checkout with fetch-depth: 0
+    # already fetches every tag (its default refspec includes refs/tags/*),
+    # which is what lets Resolve-DraftVersion check an existing tag
+    # with no fetch-tags input needed.
     - name: Resolve the version
       id: resolve
       shell: pwsh
@@ -111,10 +116,11 @@ runs:
 
     # ── Have a model write the opening paragraph ──────────────────────────
     #
-    # Always attempted, never required. A missing copilot-requests: write
-    # permission on the caller, a service outage, or a network error all
-    # land in the same place: the placeholder comment stays, the release
-    # still gets drafted, and you can either write the paragraph yourself
+    # Always attempted, never required.
+    # A missing copilot-requests: write permission on the caller,
+    # a service outage, or a network error all land in the same place:
+    # the placeholder comment stays, the release still gets drafted,
+    # and you can either write the paragraph yourself
     # or delete the draft and re-run once the service is back.
 
     - name: Build the summary prompt
@@ -127,21 +133,25 @@ runs:
         -ChangelogPath Changelog.md
         -OutputPath prompt.txt
 
-    # Not pre-installed on GitHub-hosted runners, and the action shells out
-    # to it, so without this the summary step fails every time.
+    # Not pre-installed on GitHub-hosted runners,
+    # and the action shells out to it,
+    # so without this the summary step fails every time.
     - name: Install the Copilot CLI
       shell: pwsh
       continue-on-error: true
       run: npm install -g @github/copilot@1.0.83
 
-    # GH_TOKEN is NOT set here on purpose. An env var on this step would only
-    # reach ai-inference's own process, not the Copilot CLI subprocess it
-    # shells out to, and testing that live confirmed it: the token has to
-    # come from the calling workflow, which is the only level an env var
-    # actually cascades down through every nested composite action from.
-    # An empty model lets the Copilot CLI auto-select one available on the
-    # account's own plan, rather than pinning a name that can quietly stop
-    # being available (confirmed live: gpt-4.1, this step's previous pin,
+    # GH_TOKEN is NOT set here on purpose.
+    # An env var on this step would only reach ai-inference's own process,
+    # not the Copilot CLI subprocess it shells out to,
+    # and testing that live confirmed it:
+    # the token has to come from the calling workflow,
+    # which is the only level an env var actually cascades down
+    # through every nested composite action from.
+    # An empty model lets the Copilot CLI
+    # auto-select one available on the account's own plan,
+    # rather than pinning a name that can quietly stop being available
+    # (confirmed live: gpt-4.1, this step's previous pin,
     # started failing with "not available" with no code change on our side).
     - name: Summarize the changelog
       id: summary

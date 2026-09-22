@@ -1,9 +1,11 @@
 #Requires -Version 7.0
 <#
-    The logic behind finding the CI run to release and reading what it
-    built: locating a run by commit or by version, downloading its
-    artifact, and reading the version file inside it.
+    The logic behind finding the CI run to release
+    and reading what it built:
+    locating a run by commit or by version, downloading its artifact,
+    and reading the version file inside it.
 #>
+using namespace System.IO
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -15,10 +17,10 @@ $ErrorActionPreference = 'Stop'
 function Resolve-SearchBranch {
     <#
     .SYNOPSIS
-        Returns the branch recent runs should be searched on: the ref
-        itself when it names a real branch, otherwise the repo's default
-        branch - a tag or a pull-request merge ref never had a run of
-        its own.
+        Returns the branch recent runs should be searched on:
+        the ref itself when it names a real branch,
+        otherwise the repo's default branch -
+        a tag or a pull-request merge ref never had a run of its own.
     #>
     param(
         [Parameter(Mandatory)][string]$Ref,
@@ -27,7 +29,8 @@ function Resolve-SearchBranch {
     )
 
     if ($Ref -like 'refs/heads/*') { return $RefName }
-    return (gh api "repos/$Repository" --jq '.default_branch' | Select-Object -Last 1)
+    return (gh api "repos/$Repository" --jq '.default_branch' |
+        Select-Object -Last 1)
 }
 
 function Find-RunForCommit {
@@ -36,16 +39,17 @@ function Find-RunForCommit {
         Returns the id and sha of the newest successful run of a workflow
         for an exact commit, or $null when there is none.
     .DESCRIPTION
-        Anything older is a different tree; anything unsuccessful was
-        never verified.
+        Anything older is a different tree;
+        anything unsuccessful was never verified.
     #>
     param(
         [Parameter(Mandatory)][string]$Workflow,
         [Parameter(Mandatory)][string]$Sha
     )
 
-    $runs = @(gh run list --workflow $Workflow --commit $Sha --status success --limit 1 `
-            --json 'databaseId,headSha' | ConvertFrom-Json)
+    $runs = @(gh run list --workflow $Workflow --commit $Sha --status success --limit 1 --json 'databaseId,headSha' |
+        ConvertFrom-Json)
+
     if (-not $runs) { return $null }
     return [pscustomobject]@{ RunId = "$($runs[0].databaseId)"; Sha = $runs[0].headSha }
 }
@@ -53,15 +57,15 @@ function Find-RunForCommit {
 function Find-RunForVersion {
     <#
     .SYNOPSIS
-        Returns the id and sha of the newest successful run whose
-        artifact recorded the given version, or $null when none of the
-        recent runs did.
+        Returns the id and sha of the newest successful run
+        whose artifact recorded the given version,
+        or $null when none of the recent runs did.
     .DESCRIPTION
         Walks recent successful runs on the branch, newest first,
-        downloading each one's artifact to a scratch folder and reading
-        its version file until one matches. A run whose artifact has
-        expired could not be released anyway, so it is skipped rather
-        than fatal.
+        downloading each one's artifact to a scratch folder
+        and reading its version file until one matches.
+        A run whose artifact has expired could not be released anyway,
+        so it is skipped rather than fatal.
     #>
     param(
         [Parameter(Mandatory)][string]$Workflow,
@@ -72,11 +76,11 @@ function Find-RunForVersion {
         [Parameter(Mandatory)][int]$SearchDepth
     )
 
-    $runs = @(gh run list --workflow $Workflow --branch $Branch --status success --limit $SearchDepth `
-            --json 'databaseId,headSha' | ConvertFrom-Json)
+    $runs = @(gh run list --workflow $Workflow --branch $Branch --status success --limit $SearchDepth --json 'databaseId,headSha' |
+        ConvertFrom-Json)
 
     foreach ($run in $runs) {
-        $scratch = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid())
+        $scratch = Join-Path ([Path]::GetTempPath()) ([guid]::NewGuid())
         try {
             if (-not (Get-Artifact -RunId $run.databaseId -Artifact $Artifact -Path $scratch)) {
                 Write-Host "::notice::Run $($run.databaseId) no longer has a '$Artifact' artifact; skipped."
@@ -85,7 +89,10 @@ function Find-RunForVersion {
 
             $built = Get-VersionFileContent -Path (Join-Path $scratch $VersionFile)
             if ($built -eq $Version) {
-                return [pscustomobject]@{ RunId = "$($run.databaseId)"; Sha = $run.headSha }
+                return [pscustomobject]@{
+                    RunId = "$($run.databaseId)"
+                    Sha   = $run.headSha
+                }
             }
         }
         finally {
@@ -103,8 +110,8 @@ function Find-RunForVersion {
 function Get-Artifact {
     <#
     .SYNOPSIS
-        Downloads a run's named artifact into a folder, returning whether
-        it existed.
+        Downloads a run's named artifact into a folder,
+        returning whether it existed.
     #>
     param(
         [Parameter(Mandatory)][string]$RunId,

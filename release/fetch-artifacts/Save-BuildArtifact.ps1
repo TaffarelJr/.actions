@@ -5,9 +5,9 @@
     Downloads a CI run's built artifact into a folder.
 
 .DESCRIPTION
-    actions/download-artifact raises a job-level error when the named
-    artifact does not exist, even with continue-on-error - alarming for
-    what is, for a repo with nothing to package, the routine case.
+    actions/download-artifact raises a job-level error
+    when the named artifact does not exist, even with continue-on-error -
+    alarming for what is, for a repo with nothing to package, the routine case.
     `gh run download` reports the same condition as plain text instead.
 
 .PARAMETER RunId

@@ -2,15 +2,17 @@
 
 <#
 .SYNOPSIS
-    Builds the sync branch by rebase or merge, resolving the deletion
-    side of any conflict along the way, and reports what happened.
+    Builds the sync branch by rebase or merge,
+    resolving the deletion side of any conflict along the way,
+    and reports what happened.
 
 .DESCRIPTION
     This repo's own version of README.md and .github/settings.yml
-    always wins over the parent's, because the answer never changes
-    between syncs: settings.yml is a genuinely different document per
-    repo, and README.md is split by design. Asking a human the same
-    question every single sync gets nothing.
+    always wins over the parent's,
+    because the answer never changes between syncs:
+    settings.yml is a genuinely different document per repo,
+    and README.md is split by design.
+    Asking a human the same question every single sync gets nothing.
 
 .PARAMETER Remote
     Name of the parent's git remote.
@@ -31,6 +33,8 @@
 .EXAMPLE
     ./template/sync/New-SyncBranch.ps1 -Remote template -TemplateBranch main -BaseBranch main -SyncBranch template-sync -Strategy rebase
 #>
+using namespace System.Collections.Generic
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$Remote,
@@ -49,13 +53,14 @@ $upstream = "$Remote/$TemplateBranch"
 $base = "origin/$BaseBranch"
 $keepOurs = @('README.md', '.github/settings.yml')
 
-# A leaf has no scripts/ of its own. Captured before the merge/rebase
-# runs, so a new file the parent adds there can be told apart from one
-# this repo already had.
+# A leaf has no scripts/ of its own.
+# Captured before the merge/rebase runs,
+# so a new file the parent adds there
+# can be told apart from one this repo already had.
 $hadScripts = Test-PathAtRef -Ref $base -Path 'scripts'
 
-# Needed to tell a real rename on the parent's side apart from a
-# coincidence: the point in history the two sides last agreed on.
+# Needed to tell a real rename on the parent's side apart from a coincidence:
+# the point in history the two sides last agreed on.
 $mergeBase = Get-MergeBase -RefA $base -RefB $upstream
 
 $result = if ($Strategy -eq 'rebase') {
@@ -69,7 +74,7 @@ $scriptsRemoved = Remove-UnwantedScripts -HadScripts $hadScripts
 
 "conflict=$(([string]$result.Conflict).ToLower())" >> $env:GITHUB_OUTPUT
 
-$deleted = [System.Collections.Generic.List[string]]::new()
+$deleted = [List[string]]::new()
 $deleted.AddRange([string[]]$result.Deleted)
 if ($scriptsRemoved) { $deleted.Add('scripts/') }
 $deletedText = (@($deleted) | Sort-Object -Unique) -join ' '

@@ -2,32 +2,36 @@
 <#
     Reads git history and renders it as release notes.
 
-    Everything here works from commits and tags alone, so it behaves the same
-    in a .NET repo, a Node repo, or anything else.
+    Everything here works from commits and tags alone,
+    so it behaves the same in a .NET repo, a Node repo, or anything else.
 
-    The output deliberately separates two different documents that are usually
-    conflated:
+    The output deliberately separates two different documents
+    that are usually conflated:
 
-      Release notes  what a reader needs to decide whether to upgrade. The
-                     summary, the counts, and the breaking changes. Short, and
-                     always visible.
+      Release notes  what a reader needs to decide whether to upgrade.
+                     The summary, the counts, and the breaking changes.
+                     Short, and always visible.
 
       Changelog      the complete record of what changed, grouped by type.
-                     Long, mechanical, and folded away behind a <details> so
-                     it is available without burying the notes.
+                     Long, mechanical, and folded away behind a <details>
+                     so it's available without burying the notes.
 #>
+using namespace System
+using namespace System.Collections.Generic
+using namespace System.Management.Automation
+using namespace System.Security.Cryptography
+using namespace System.Text
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-
 
 #───────────────────────────────────────────────────────────────────────────────
 # Configuration
 #───────────────────────────────────────────────────────────────────────────────
 
-# The Conventional Commit types, their display names, and the order they
-# appear in - most important first. Keep in step with gitversion.yml and
-# docs/ConventionalCommits.md.
+# The Conventional Commit types, their display names,
+# and the order they appear in - most important first.
+# Keep in step with gitversion.yml and docs/ConventionalCommits.md.
 $script:Categories = [ordered]@{
     'break'    = '💥 Breaking Changes' # Aggregated, not a real type
     'revert'   = '↩️ Reverted Changes'
@@ -45,12 +49,13 @@ $script:Categories = [ordered]@{
     'other'    = '📄 Other Changes'
 }
 
-# Breaking changes belong in the notes, not behind a fold: they are the one
-# thing a reader must not miss.
+# Breaking changes belong in the notes, not behind a fold:
+# they are the one thing a reader must not miss.
 $script:NoteCategories = @('break')
 
-# A commit message can contain newlines, so JSON and line-oriented parsing
-# both break on it. Delimit with characters no message will ever hold.
+# A commit message can contain newlines,
+# so JSON and line-oriented parsing both break on it.
+# Delimit with characters no message should ever hold.
 $script:CommitDelimiter = 'ↄ'
 $script:FieldDelimiter = 'ⅎ'
 
@@ -67,17 +72,19 @@ function Get-VersionTag {
     .SYNOPSIS
         Lists the release tags, newest version first.
     .DESCRIPTION
-        Sorts by parsed SemVer rather than by date or by name, so v10.0.0
-        sorts above v9.0.0 and a re-tagged commit cannot reorder the list.
+        Sorts by parsed SemVer rather than by date or by name,
+        so v10.0.0 sorts above v9.0.0
+        and a re-tagged commit cannot reorder the list.
 
-        Only a strict 'vX.Y.Z' shape counts - [SemanticVersion]::TryParse
-        also accepts 'v1' and 'v1.2', which would otherwise let the floating
-        major/minor alias tags masquerade as releases and pick the wrong
-        baseline.
+        Only a strict 'vX.Y.Z' shape counts -
+        [SemanticVersion]::TryParse also accepts 'v1' and 'v1.2',
+        which would otherwise let the floating major/minor alias tags
+        masquerade as releases and pick the wrong baseline.
 
-        No leading comma on the return, unlike this repo's usual array-safe
-        convention - every caller pipes this into Where-Object for per-tag
-        filtering, and a comma-wrapped array arrives there as one object
+        No leading comma on the return,
+        unlike this repo's usual array-safe convention -
+        every caller pipes this into Where-Object for per-tag filtering,
+        and a comma-wrapped array arrives there as one object
         instead of enumerating, breaking .Tag/.Sha access on it entirely.
     #>
     $tags = @(git tag --list 'v*') | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
@@ -85,8 +92,7 @@ function Get-VersionTag {
     $parsed = foreach ($tag in $tags) {
         $candidate = $tag -replace '^v', ''
         $semver = $null
-        if (-not [System.Management.Automation.SemanticVersion]::TryParse(
-                $candidate, [ref]$semver)) {
+        if (-not [SemanticVersion]::TryParse($candidate, [ref]$semver)) {
             continue
         }
 
@@ -119,20 +125,22 @@ function Get-ChangelogBaseline {
     .SYNOPSIS
         Finds the commit the notes should start after.
     .DESCRIPTION
-        Normally the previous release tag. With no tags at all, a null Sha,
-        meaning "all of history" - so an initial release still gets full
-        notes including the root commit, which a range would exclude.
+        Normally the previous release tag.
+        With no tags at all, a null Sha, meaning "all of history" -
+        so an initial release still gets full notes including the root commit,
+        which a range would exclude.
 
-        Only a tag that is actually an ancestor of HeadSha is eligible - the
-        newest tag overall can be on an unrelated line of history (e.g. when
-        releasing an earlier build named by 'version', after a newer one has
-        already shipped), and picking it anyway would produce an empty or
-        nonsensical range.
+        Only a tag that is actually an ancestor of HeadSha is eligible -
+        the newest tag overall can be on an unrelated line of history
+        (e.g. when releasing an earlier build named by 'version',
+        after a newer one has already shipped),
+        and picking it anyway would produce an empty or nonsensical range.
 
         LinkFrom is always something to compare from, even when Sha is not:
-        the previous tag's name normally, or the repo's very first commit
-        when there is no previous tag - so a first release still gets a real
-        compare link instead of one with nothing on the other side.
+        the previous tag's name normally,
+        or the repo's very first commit when there is no previous tag -
+        so a first release still gets a real compare link
+        instead of one with nothing on the other side.
     .PARAMETER HeadSha
         The commit being released.
     .PARAMETER FromTag
@@ -152,12 +160,7 @@ function Get-ChangelogBaseline {
         }
     }
 
-    # Exclude a tag already pointing at HEAD: re-running for the same release,
-    # or running from a pushed tag, should not produce empty notes.
-    $previous = Get-VersionTag | Where-Object {
-        $_.Sha -ne $HeadSha -and (Test-AncestorCommit -Sha $_.Sha -OfSha $HeadSha)
-    } | Select-Object -First 1
-
+    $previous = Get-PreviousReleaseTag -HeadSha $HeadSha
     if ($previous) {
         return [pscustomobject]@{
             Tag = $previous.Tag; Version = $previous.Version; Sha = $previous.Sha
@@ -172,6 +175,23 @@ function Get-ChangelogBaseline {
     }
 }
 
+function Get-PreviousReleaseTag {
+    <#
+    .SYNOPSIS
+        Returns the nearest release tag that is an ancestor of HeadSha,
+        or $null when there is none.
+    .DESCRIPTION
+        Excludes a tag already pointing at HeadSha:
+        re-running for the same release, or running from a pushed tag,
+        should not produce empty notes.
+    #>
+    param([Parameter(Mandatory)][string]$HeadSha)
+
+    return Get-VersionTag | Where-Object {
+        $_.Sha -ne $HeadSha -and (Test-AncestorCommit -Sha $_.Sha -OfSha $HeadSha)
+    } | Select-Object -First 1
+}
+
 function Get-ChangelogCommit {
     <#
     .SYNOPSIS
@@ -184,26 +204,78 @@ function Get-ChangelogCommit {
         [Parameter(Mandatory)][string]$EndSha
     )
 
-    $format = "%H$($script:FieldDelimiter)%s$($script:FieldDelimiter)%b$($script:CommitDelimiter)"
-    $range = if ($StartSha) { "$StartSha..$EndSha" } else { $EndSha }
-    $raw = git log --reverse $range --format=$format
-    if (-not $raw) { return , @() }
+    $raw = Get-RawCommitLog -StartSha $StartSha -EndSha $EndSha
+    if (-not $raw) {
+        return , @()
+    }
 
-    $records = ($raw -join "`n") -split $script:CommitDelimiter
-
-    $commits = @($records |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { $_ -ne '' } |
-            ForEach-Object {
-                $fields = $_ -split $script:FieldDelimiter, 3
-                ConvertTo-ParsedCommit `
-                    -Sha $fields[0].Trim() `
-                    -Subject $fields[1].Trim() `
-                    -Body $(if ($fields.Count -gt 2) { $fields[2].Trim() } else { '' })
-            })
+    $records = Split-CommitRecord -Raw $raw
+    $commits = @($records | ForEach-Object { ConvertTo-ParsedCommitRecord -Record $_ })
 
     # A merge commit restates what its own commits already say.
     return , @($commits | Where-Object { -not $_.IsMerge })
+}
+
+function Get-RawCommitLog {
+    <#
+    .SYNOPSIS
+        Runs git log for the range after StartSha up to EndSha,
+        one delimited record per commit.
+    .PARAMETER StartSha
+        Exclusive lower bound. Null means all of history.
+    #>
+    param(
+        [AllowNull()][string]$StartSha,
+        [Parameter(Mandatory)][string]$EndSha
+    )
+
+    $format = "%H$($script:FieldDelimiter)%s$($script:FieldDelimiter)%b$($script:CommitDelimiter)"
+    $range = if ($StartSha) {
+        "$StartSha..$EndSha"
+    }
+    else {
+        $EndSha
+    }
+
+    return git log --reverse $range --format=$format
+}
+
+function Split-CommitRecord {
+    <#
+    .SYNOPSIS
+        Splits git log's raw output into one trimmed,
+        non-empty record string per commit, always as an array.
+    .DESCRIPTION
+        A blank line inside a multi-paragraph commit body is a genuine
+        element of Raw, not an absent one - AllowEmptyString is what
+        lets that element bind at all, since a Mandatory string array
+        otherwise rejects the whole array over just one empty element.
+    #>
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][AllowEmptyString()]
+        [string[]]$Raw
+    )
+
+    $records = ($Raw -join "`n") -split $script:CommitDelimiter
+    return , @($records | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+}
+
+function ConvertTo-ParsedCommitRecord {
+    <#
+    .SYNOPSIS
+        Parses one of Split-CommitRecord's records into a commit object.
+    #>
+    param([Parameter(Mandatory)][string]$Record)
+
+    $fields = $Record -split $script:FieldDelimiter, 3
+    $body = if ($fields.Count -gt 2) {
+        $fields[2].Trim()
+    }
+    else {
+        ''
+    }
+
+    return ConvertTo-ParsedCommit -Sha $fields[0].Trim() -Subject $fields[1].Trim() -Body $body
 }
 
 function ConvertTo-ParsedCommit {
@@ -218,8 +290,7 @@ function ConvertTo-ParsedCommit {
     )
 
     $isMerge = $Subject -match '^Merge (pull request|branch|remote)'
-    $isConventional = $Subject -match
-        '^\s*([a-z]+)\s*(\(([^)]*)\))?\s*(!)?\s*:\s*(.+?)\s*$'
+    $isConventional = $Subject -match '^\s*([a-z]+)\s*(\(([^)]*)\))?\s*(!)?\s*:\s*(.+?)\s*$'
 
     $type = ''
     $scope = ''
@@ -257,18 +328,28 @@ function Get-ScopeBadge {
 
     if (-not $Commit.Scope) { return '' }
 
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Commit.Scope)
-    $hash = [System.Security.Cryptography.SHA256]::HashData($bytes)
-    $color = ([System.BitConverter]::ToString($hash) -replace '-', '').
-        Substring(40, 6)
+    $color = Get-ScopeColor -Scope $Commit.Scope
 
     # A literal '-' in a shields.io label has to be doubled.
     $label = [uri]::EscapeDataString($Commit.Scope) -replace '-', '--'
 
-    # ${color} is braced because '?' is legal in a variable name, so
-    # "$color?style" would parse as one name.
+    # ${color} is braced because '?' is legal in a variable name,
+    # so "$color?style" would parse as one name.
     $url = "https://img.shields.io/badge/$label-${color}?style=$($script:BadgeStyle)"
     return "![$($Commit.Scope)]($url) "
+}
+
+function Get-ScopeColor {
+    <#
+    .SYNOPSIS
+        Returns a scope's badge colour, hashed from its own text
+        so the same scope is always the same colour.
+    #>
+    param([Parameter(Mandatory)][string]$Scope)
+
+    $bytes = [Encoding]::UTF8.GetBytes($Scope)
+    $hash = [SHA256]::HashData($bytes)
+    return ([BitConverter]::ToString($hash) -replace '-', '').Substring(40, 6)
 }
 
 function Get-CommitLine {
@@ -282,23 +363,57 @@ function Get-CommitLine {
         [AllowEmptyString()][string]$Repository
     )
 
-    # In the aggregated and catch-all sections the type is not implied by the
-    # heading, so it has to be stated.
-    $prefix = ''
-    if ($CategoryKey -in 'break', 'other' -and $Commit.Type) {
-        $prefix = "**$($Commit.Type)**: "
+    $prefix = Get-CommitTypePrefix -Commit $Commit -CategoryKey $CategoryKey
+    $badge = Get-ScopeBadge $Commit
+    $suffix = if ($CategoryKey -ne 'break' -and $Commit.IsBreaking) {
+        ' 💥'
+    }
+    else {
+        ''
     }
 
-    $badge = Get-ScopeBadge $Commit
-    $suffix = if ($CategoryKey -ne 'break' -and $Commit.IsBreaking) { ' 💥' } else { '' }
+    $link = Get-CommitLink -Commit $Commit -Repository $Repository
+    return "- $prefix$badge$($Commit.Description)$suffix$link"
+}
+
+function Get-CommitTypePrefix {
+    <#
+    .SYNOPSIS
+        Returns a commit line's bolded type prefix,
+        or '' when the heading it renders under already implies the type.
+    .DESCRIPTION
+        In the aggregated and catch-all sections
+        the type is not implied by the heading, so it has to be stated.
+    #>
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Commit,
+        [Parameter(Mandatory)][string]$CategoryKey
+    )
+
+    if ($CategoryKey -in 'break', 'other' -and $Commit.Type) {
+        return "**$($Commit.Type)**: "
+    }
+
+    return ''
+}
+
+function Get-CommitLink {
+    <#
+    .SYNOPSIS
+        Renders a commit's short sha, linked to it on GitHub
+        when a repository is known.
+    #>
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Commit,
+        [AllowEmptyString()][string]$Repository
+    )
 
     $short = $Commit.Sha.Substring(0, 7)
-    $link = if ($Repository) {
-        " ([``$short``](https://github.com/$Repository/commit/$($Commit.Sha)))"
+    if ($Repository) {
+        return " ([``$short``](https://github.com/$Repository/commit/$($Commit.Sha)))"
     }
-    else { " (``$short``)" }
 
-    return "- $prefix$badge$($Commit.Description)$suffix$link"
+    return " (``$short``)"
 }
 
 function Get-BreakingDetail {
@@ -321,27 +436,21 @@ function Get-CategoryGroup {
     .SYNOPSIS
         Assigns every commit to exactly one category, in priority order.
     .DESCRIPTION
-        Each category claims the commits the ones above it did not, so nothing
-        is listed twice. 'break' is a view over the others and claims nothing;
+        Each category claims the commits the ones above it did not,
+        so nothing is listed twice.
+        'break' is a view over the others and claims nothing;
         'other' sweeps up whatever is left, so no commit is ever dropped.
     #>
     param([Parameter(Mandatory)][AllowEmptyCollection()][array]$Commits)
 
-    $remaining = [System.Collections.Generic.List[object]]::new()
+    $remaining = [List[object]]::new()
     $Commits | ForEach-Object { $remaining.Add($_) }
 
     $groups = [ordered]@{}
 
     foreach ($category in $script:Categories.GetEnumerator()) {
         $key = $category.Key
-
-        # The switch is wrapped: it unwraps a single-item result to a scalar,
-        # which then has no .Count.
-        $matched = @(switch ($key) {
-                'break' { @($Commits | Where-Object { $_.IsBreaking }) }
-                'other' { @($remaining) }
-                default { @($remaining | Where-Object { $_.Type -eq $key }) }
-            })
+        $matched = Get-CategoryMatch -Key $key -Commits $Commits -Remaining $remaining
 
         if ($key -ne 'break') {
             $matched | ForEach-Object { $remaining.Remove($_) | Out-Null }
@@ -349,15 +458,36 @@ function Get-CategoryGroup {
 
         if ($matched.Count) {
             $groups[$key] = [pscustomobject]@{
-                Key      = $key
-                Title    = $category.Value
-                Commits  = $matched
-                IsNote   = ($key -in $script:NoteCategories)
+                Key     = $key
+                Title   = $category.Value
+                Commits = $matched
+                IsNote  = ($key -in $script:NoteCategories)
             }
         }
     }
 
     return $groups
+}
+
+function Get-CategoryMatch {
+    <#
+    .SYNOPSIS
+        Returns the commits one category claims, always as an array:
+        every breaking commit for 'break' (a view, not a claim),
+        whatever is left for 'other',
+        or whatever of Remaining matches the type otherwise.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Key,
+        [Parameter(Mandatory)][AllowEmptyCollection()][array]$Commits,
+        [Parameter(Mandatory)][AllowEmptyCollection()][array]$Remaining
+    )
+
+    switch ($Key) {
+        'break' { return , @($Commits | Where-Object { $_.IsBreaking }) }
+        'other' { return , @($Remaining) }
+        default { return , @($Remaining | Where-Object { $_.Type -eq $Key }) }
+    }
 }
 
 function Get-CountSentence {
@@ -373,7 +503,7 @@ function Get-CountSentence {
     # Breaking is a view, not a category - a breaking feat is still a feat.
     $other = $Commits.Count - $features - $fixes
 
-    $parts = [System.Collections.Generic.List[string]]::new()
+    $parts = [List[string]]::new()
     if ($breaking) { $parts.Add("**$breaking breaking**") }
     if ($features) { $parts.Add("$features new feature$(if ($features -ne 1) { 's' })") }
     if ($fixes) { $parts.Add("$fixes bug fix$(if ($fixes -ne 1) { 'es' })") }
@@ -388,9 +518,9 @@ function Format-ReleaseNote {
     .SYNOPSIS
         Renders the full release body: notes first, changelog folded below.
     .PARAMETER Summary
-        Prose describing the release. Written by a human or generated. When
-        empty, a placeholder comment is emitted instead so the shape of the
-        document does not change.
+        Prose describing the release. Written by a human or generated.
+        When empty, a placeholder comment is emitted instead
+        so the shape of the document does not change.
     #>
     param(
         [Parameter(Mandatory)][string]$Version,
@@ -400,7 +530,7 @@ function Format-ReleaseNote {
         [AllowEmptyString()][string]$Summary = ''
     )
 
-    $lines = [System.Collections.Generic.List[string]]::new()
+    $lines = [List[string]]::new()
 
     # ── Release notes ──────────────────────────────────────────────────────
     if ($Summary.Trim()) {
@@ -409,6 +539,7 @@ function Format-ReleaseNote {
     else {
         $lines.Add('<!-- Write the highlights here: what changed and why it matters. -->')
     }
+
     $lines.Add('')
 
     $counts = Get-CountSentence $Commits
@@ -420,15 +551,9 @@ function Format-ReleaseNote {
     $groups = Get-CategoryGroup $Commits
 
     foreach ($group in $groups.Values | Where-Object { $_.IsNote }) {
-        $lines.Add("## $($group.Title)")
-        $lines.Add('')
-        foreach ($commit in $group.Commits) {
-            $lines.Add((Get-CommitLine -Commit $commit -CategoryKey $group.Key `
-                        -Repository $Repository))
-            $detail = Get-BreakingDetail $commit
-            if ($detail) { $lines.Add($detail) }
+        foreach ($line in (Get-NoteSection -Group $group -Repository $Repository)) {
+            $lines.Add($line)
         }
-        $lines.Add('')
     }
 
     # ── Changelog, folded ──────────────────────────────────────────────────
@@ -436,39 +561,118 @@ function Format-ReleaseNote {
     if ($detailGroups.Count) {
         $lines.Add('<details>')
         $lines.Add("<summary>📋 <b>Full changelog</b> ($($Commits.Count) commits)</summary>")
-        # A blank line after the summary tag is required, or the Markdown
-        # inside the fold is rendered as literal text.
+
+        # A blank line after the summary tag is required,
+        # or the Markdown inside the fold is rendered as literal text.
         $lines.Add('')
 
         foreach ($group in $detailGroups) {
-            $lines.Add("### $($group.Title)")
-            $lines.Add('')
-            foreach ($commit in $group.Commits) {
-                $lines.Add((Get-CommitLine -Commit $commit -CategoryKey $group.Key `
-                            -Repository $Repository))
+            foreach ($line in (Get-DetailSection -Group $group -Repository $Repository)) {
+                $lines.Add($line)
             }
-            $lines.Add('')
         }
 
         $lines.Add('</details>')
         $lines.Add('')
     }
 
-    # The compare link is where the commit-by-commit detail lives, so nothing
-    # has to be inlined to be available. LinkFrom is the previous release tag
-    # normally, or the repo's first commit when there is none - either way
-    # there is always a real compare, even for the very first release.
-    if ($Repository -and $Baseline.LinkFrom) {
-        $label = if ($Baseline.Tag) { $Baseline.Tag } else { $Baseline.LinkFrom.Substring(0, 7) }
-        $url = "https://github.com/$Repository/compare/$($Baseline.LinkFrom)...v$Version"
-        $lines.Add("**Full Changelog**: [$label...v$Version]($url)")
-    }
-    elseif ($Repository) {
-        $url = "https://github.com/$Repository/commits/v$Version"
-        $lines.Add("**Full Changelog**: [all commits]($url)")
-    }
+    # The compare link is where the commit-by-commit detail lives,
+    # so nothing has to be inlined to be available.
+    $compareLink = Get-CompareLink -Repository $Repository -Baseline $Baseline -Version $Version
+    if ($compareLink) { $lines.Add($compareLink) }
 
     return $lines
+}
+
+function Get-NoteSection {
+    <#
+    .SYNOPSIS
+        Renders one note category's heading and every commit under it,
+        always as an array of lines.
+    #>
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Group,
+        [AllowEmptyString()][string]$Repository
+    )
+
+    $lines = [List[string]]::new()
+    $lines.Add("## $($Group.Title)")
+    $lines.Add('')
+
+    foreach ($commit in $Group.Commits) {
+        $line = Get-CommitLine `
+            -Commit $commit `
+            -CategoryKey $Group.Key `
+            -Repository $Repository
+
+        $lines.Add($line)
+        $detail = Get-BreakingDetail $commit
+        if ($detail) { $lines.Add($detail) }
+    }
+
+    $lines.Add('')
+    return , [string[]]$lines.ToArray()
+}
+
+function Get-DetailSection {
+    <#
+    .SYNOPSIS
+        Renders one detail category's heading and every commit under it,
+        always as an array of lines.
+    #>
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Group,
+        [AllowEmptyString()][string]$Repository
+    )
+
+    $lines = [List[string]]::new()
+    $lines.Add("### $($Group.Title)")
+    $lines.Add('')
+
+    foreach ($commit in $Group.Commits) {
+        $line = Get-CommitLine `
+            -Commit $commit `
+            -CategoryKey $Group.Key `
+            -Repository $Repository
+
+        $lines.Add($line)
+    }
+
+    $lines.Add('')
+    return , [string[]]$lines.ToArray()
+}
+
+function Get-CompareLink {
+    <#
+    .SYNOPSIS
+        Renders the compare link for the full commit-by-commit detail,
+        or '' when there is no repository to link into.
+    .DESCRIPTION
+        LinkFrom is the previous release tag normally,
+        or the repo's first commit when there is none -
+        either way there is always a real compare, even for the very first release.
+    #>
+    param(
+        [AllowEmptyString()][string]$Repository,
+        [Parameter(Mandatory)]$Baseline,
+        [Parameter(Mandatory)][string]$Version
+    )
+
+    if (-not $Repository) { return '' }
+
+    if (-not $Baseline.LinkFrom) {
+        return "**Full Changelog**: [all commits](https://github.com/$Repository/commits/v$Version)"
+    }
+
+    $label = if ($Baseline.Tag) {
+        $Baseline.Tag
+    }
+    else {
+        $Baseline.LinkFrom.Substring(0, 7)
+    }
+
+    $url = "https://github.com/$Repository/compare/$($Baseline.LinkFrom)...v$Version"
+    return "**Full Changelog**: [$label...v$Version]($url)"
 }
 
 Export-ModuleMember -Function @(

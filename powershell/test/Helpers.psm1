@@ -3,6 +3,8 @@
     Finds the test files, runs each in its own pwsh under Invoke-TestFile.ps1,
     reads the tally each prints, and sums them up.
 #>
+using namespace System.Diagnostics
+using namespace System.IO
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -32,31 +34,31 @@ function Find-TestFile {
 function Get-TestDisplayName {
     <#
     .SYNOPSIS
-        Returns a test file's path relative to the test folder, without the
-        suffix and with forward slashes, so two files of the same name in
-        different folders still read apart.
+        Returns a test file's path relative to the test folder,
+        without the suffix and with forward slashes,
+        so two files of the same name in different folders still read apart.
     #>
     param(
         [Parameter(Mandatory)][string]$TestRoot,
         [Parameter(Mandatory)][string]$File
     )
 
-    $relative = [System.IO.Path]::GetRelativePath($TestRoot, $File)
+    $relative = [Path]::GetRelativePath($TestRoot, $File)
     return ($relative -replace '\.Tests\.ps1$' -replace '\\', '/')
 }
 
 function Get-CoverageReportPath {
     <#
     .SYNOPSIS
-        Returns where a test file's coverage report goes: its display name
-        under the output folder, as Cobertura XML.
+        Returns where a test file's coverage report goes:
+        its display name under the output folder, as Cobertura XML.
     #>
     param(
         [Parameter(Mandatory)][string]$OutputPath,
         [Parameter(Mandatory)][string]$Name
     )
 
-    $relative = $Name -replace '/', [System.IO.Path]::DirectorySeparatorChar
+    $relative = $Name -replace '/', [Path]::DirectorySeparatorChar
     return Join-Path $OutputPath "$relative.cobertura.xml"
 }
 
@@ -67,9 +69,9 @@ function Get-CoverageReportPath {
 function Read-TestTally {
     <#
     .SYNOPSIS
-        Reads a file's "N passed, M failed" line out of its output, and decides
-        whether it crashed: no tally at all, or a failing exit with nothing
-        failed.
+        Reads a file's "N passed, M failed" line out of its output,
+        and decides whether it crashed:
+        no tally at all, or a failing exit with nothing failed.
     #>
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][AllowEmptyString()][string[]]$Output,
@@ -115,8 +117,8 @@ function Format-TestVerdict {
 function Format-TestSummary {
     <#
     .SYNOPSIS
-        Renders the closing line: files, cases passed and failed, crashes,
-        and the wall time.
+        Renders the closing line:
+        files, cases passed and failed, crashes, and the wall time.
     #>
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][array]$Results,
@@ -144,8 +146,8 @@ function Format-TestSummary {
 function Write-TestResult {
     <#
     .SYNOPSIS
-        Prints one file's verdict and time, then its output when it failed or
-        -ShowOutput asked for it.
+        Prints one file's verdict and time,
+        then its output when it failed or -ShowOutput asked for it.
     #>
     param(
         [Parameter(Mandatory)][pscustomobject]$Result,
@@ -168,8 +170,8 @@ function Write-TestResult {
 function Invoke-TestFileProcess {
     <#
     .SYNOPSIS
-        Runs one test file in a fresh pwsh under the coverage wrapper and
-        returns its result: name, tally, exit code, time, and captured output.
+        Runs one test file in a fresh pwsh under the coverage wrapper
+        and returns its result: name, tally, exit code, time, and captured output.
     #>
     param(
         [Parameter(Mandatory)][string]$File,
@@ -179,7 +181,7 @@ function Invoke-TestFileProcess {
         [Parameter(Mandatory)][string]$ReportPath
     )
 
-    $pwsh = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+    $pwsh = [Process]::GetCurrentProcess().MainModule.FileName
     $arguments = @(
         '-NoProfile', '-NonInteractive', '-File', $script:WrapperPath
         '-TestFile', $File
@@ -189,7 +191,7 @@ function Invoke-TestFileProcess {
         '-OutputPath', $ReportPath
     )
 
-    $clock = [System.Diagnostics.Stopwatch]::StartNew()
+    $clock = [Stopwatch]::StartNew()
     $raw = & $pwsh @arguments 2>&1
     $exitCode = $LASTEXITCODE
     $clock.Stop()
@@ -211,12 +213,14 @@ function Invoke-TestFileProcess {
 function Invoke-TestRun {
     <#
     .SYNOPSIS
-        Runs every matching test file under coverage, prints each result and
-        the summary, and returns the results with the exit code to end with:
+        Runs every matching test file under coverage,
+        prints each result and the summary,
+        and returns the results with the exit code to end with:
         the number of failed files, or 1 when there were no files at all.
     .DESCRIPTION
-        The source folder measured for coverage is the test folder's own
-        parent, since a test always mirrors its source one level down.
+        The source folder measured for coverage
+        is the test folder's own parent,
+        since a test always mirrors its source one level down.
     #>
     param(
         [Parameter(Mandatory)][string]$Path,
@@ -235,7 +239,7 @@ function Invoke-TestRun {
 
     $reportRoot = (New-Item -ItemType Directory -Force -Path $OutputPath).FullName
 
-    $total = [System.Diagnostics.Stopwatch]::StartNew()
+    $total = [Stopwatch]::StartNew()
     $results = foreach ($file in $files) {
         $name = Get-TestDisplayName -TestRoot $testRoot -File $file.FullName
         $reportPath = Get-CoverageReportPath -OutputPath $reportRoot -Name $name

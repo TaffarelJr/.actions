@@ -1,8 +1,8 @@
 #Requires -Version 7.0
 <#
-    The logic behind drafting a release: deciding which version to draft,
-    building the AI-summary prompt, and creating/updating the draft
-    itself.
+    The logic behind drafting a release:
+    deciding which version to draft, building the AI-summary prompt,
+    and creating/updating the draft itself.
 #>
 
 Set-StrictMode -Version Latest
@@ -26,20 +26,20 @@ function Test-TagExists {
 function Resolve-DraftVersion {
     <#
     .SYNOPSIS
-        Decides the version to draft a release for, and the commit it
-        was built from. Throws when there is nothing valid to draft.
+        Decides the version to draft a release for,
+        and the commit it was built from.
+        Throws when there is nothing valid to draft.
     .DESCRIPTION
         A named version can only come from the build that produced it -
-        there is no fallback, since a release ships a build. Otherwise
-        prefers the version the build recorded over recalculating it, so
-        the release reports what is actually stamped into the binaries.
-        Refuses a version that is not a plain X.Y.Z release version, or
-        one already tagged - the tag is created when a release is
-        published, so an existing one means this exact version is
-        already public.
+        there is no fallback, since a release ships a build.
+        Otherwise prefers the version the build recorded over recalculating it,
+        so the release reports what is actually stamped into the binaries.
+        Refuses a version that is not a plain X.Y.Z release version,
+        or one already tagged - the tag is created when a release is published,
+        so an existing one means this exact version is already public.
     .OUTPUTS
-        A pscustomobject with Version, Sha, and Source ('Build' or
-        'Fallback', for the caller to report which one was used).
+        A pscustomobject with Version, Sha, and Source
+        ('Build' or 'Fallback', for the caller to report which one was used).
     #>
     param(
         [Parameter(Mandatory)][AllowEmptyString()][string]$Requested,
@@ -84,8 +84,8 @@ function Resolve-DraftVersion {
 function Get-SummaryPrompt {
     <#
     .SYNOPSIS
-        Builds the prompt asking a model to summarize a release's
-        changelog into an opening paragraph.
+        Builds the prompt asking a model to summarize a release's changelog
+        into an opening paragraph.
     #>
     param(
         [Parameter(Mandatory)][string]$Version,
@@ -115,8 +115,7 @@ $Changelog
 function Get-ReleaseList {
     <#
     .SYNOPSIS
-        Returns every release in the repo, up to Limit, always as an
-        array.
+        Returns every release in the repo, up to Limit, always as an array.
     #>
     param([int]$Limit = 100)
 
@@ -126,8 +125,8 @@ function Get-ReleaseList {
 function Test-DraftExists {
     <#
     .SYNOPSIS
-        Returns whether a draft release already exists for a tag, given
-        the repo's releases.
+        Returns whether a draft release already exists for a tag,
+        given the repo's releases.
     #>
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][array]$Release,
@@ -150,12 +149,12 @@ function Remove-Draft {
 function New-DraftRelease {
     <#
     .SYNOPSIS
-        Creates a draft release for a tag, targeting a commit, and
-        returns its URL.
+        Creates a draft release for a tag, targeting a commit,
+        and returns its URL.
     .DESCRIPTION
-        --target pins the release to the commit that was built, so the
-        tag lands there when it is published even if main has moved on
-        since.
+        --target pins the release to the commit that was built,
+        so the tag lands there when it is published
+        even if main has moved on since.
     #>
     param(
         [Parameter(Mandatory)][string]$Tag,
@@ -181,8 +180,8 @@ function Test-HasArtifact {
 function Publish-ReleaseAsset {
     <#
     .SYNOPSIS
-        Uploads every file directly under a folder to a release, and
-        returns how many there were.
+        Uploads every file directly under a folder to a release,
+        and returns how many there were.
     #>
     param(
         [Parameter(Mandatory)][string]$Tag,

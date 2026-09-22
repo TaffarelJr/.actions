@@ -2,13 +2,14 @@
 
 # Writes the release body for a version, from the git history.
 #
-# The script and its module travel with the action, so a repo needs nothing
-# of its own to generate release notes - which is what lets a leaf repo
-# delete scripts/ and still be able to cut a release.
+# The script and its module travel with the action,
+# so a repo needs nothing of its own to generate release notes -
+# which is what lets a leaf repo delete scripts/
+# and still be able to cut a release.
 #
-# The caller must have checked out with fetch-depth: 0. The notes are built
-# from the commits since the last version tag, so a shallow clone silently
-# produces the wrong range.
+# The caller must have checked out with fetch-depth: 0.
+# The notes are built from the commits since the last version tag,
+# so a shallow clone silently produces the wrong range.
 
 name: Build Changelog
 description: Builds release notes and a changelog from the git history.
@@ -23,15 +24,15 @@ inputs:
     default: Changelog.md
   summary-path:
     description: >-
-      File holding the prose summary for the top of the notes. When omitted,
-      a placeholder comment is written instead, which is invisible once the
-      release is published.
+      File holding the prose summary for the top of the notes.
+      When omitted, a placeholder comment is written instead,
+      which is invisible once the release is published.
     required: false
     default: ''
   from-tag:
     description: >-
-      Start from this tag instead of the most recent version tag. Use it to
-      rebuild the notes for an earlier release.
+      Start from this tag instead of the most recent version tag.
+      Use it to rebuild the notes for an earlier release.
     required: false
     default: ''
   to-ref:

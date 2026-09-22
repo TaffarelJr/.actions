@@ -1,23 +1,30 @@
 #Requires -Version 7.0
 <#
-    The harness every *.Tests.ps1 in this repo shares: assertions and the
-    pass/fail tally, temp folders, console capture, the source under test,
-    and the stubs that stand in for gh, Read-Host, and Install-Module.
+    The harness every *.Tests.ps1 in this repo shares:
+    assertions and the pass/fail tally, temp folders, console capture,
+    the source under test, and the stubs that stand in for
+    gh, Read-Host, and Install-Module.
 
-    A test file lives under test/ at the same relative path as the file it
-    exercises. It imports this through the TESTKIT_PATH environment variable
-    Invoke-Tests.ps1 sets, its source through Import-SourceModule, runs its
-    cases, and ends with `exit (Complete-TestRun)`. Invoke-Tests.ps1 gives
-    each file its own pwsh, so nothing here has to be undone between files -
+    A test file lives under test/
+    at the same relative path as the file it exercises.
+    It imports this through the TESTKIT_PATH environment variable
+    Invoke-Tests.ps1 sets, its source through Import-SourceModule,
+    runs its cases, and ends with `exit (Complete-TestRun)`.
+    Invoke-Tests.ps1 gives each file its own pwsh,
+    so nothing here has to be undone between files -
     only between the cases within one.
 #>
+using namespace System.Collections.Generic
+using namespace System.IO
+using namespace System.Management.Automation
+using namespace System.Security
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:PassCount = 0
 $script:FailCount = 0
-$script:TestRoots = [System.Collections.Generic.List[string]]::new()
+$script:TestRoots = [List[string]]::new()
 
 #───────────────────────────────────────────────────────────────────────────────
 # Source under test
@@ -26,9 +33,9 @@ $script:TestRoots = [System.Collections.Generic.List[string]]::new()
 function Get-SourcePath {
     <#
     .SYNOPSIS
-        Returns the source folder the calling test file mirrors - the same
-        path under SOURCE_ROOT as the file has under TEST_ROOT - or a file in
-        it when -Name is given.
+        Returns the source folder the calling test file mirrors -
+        the same path under SOURCE_ROOT as the file has under TEST_ROOT -
+        or a file in it when -Name is given.
     #>
     param([string]$Name)
 
@@ -36,12 +43,16 @@ function Get-SourcePath {
         throw 'Run the tests through powershell/test/Invoke-Tests.ps1; it sets TEST_ROOT and SOURCE_ROOT.'
     }
 
-    $frames = @(Get-PSCallStack | Where-Object { $_.ScriptName -and $_.ScriptName -ne $PSCommandPath })
-    if (-not $frames) { throw 'Get-SourcePath must be called from a script file, not the console.' }
+    $frames = @(Get-PSCallStack |
+        Where-Object { $_.ScriptName -and $_.ScriptName -ne $PSCommandPath })
+
+    if (-not $frames) {
+        throw 'Get-SourcePath must be called from a script file, not the console.'
+    }
 
     $caller = Split-Path -Parent $frames[0].ScriptName
-    $relative = [System.IO.Path]::GetRelativePath($env:TEST_ROOT, $caller)
-    $folder = [System.IO.Path]::GetFullPath((Join-Path $env:SOURCE_ROOT $relative))
+    $relative = [Path]::GetRelativePath($env:TEST_ROOT, $caller)
+    $folder = [Path]::GetFullPath((Join-Path $env:SOURCE_ROOT $relative))
     if ($Name) { return Join-Path $folder $Name }
     return $folder
 }
@@ -49,11 +60,12 @@ function Get-SourcePath {
 function Import-SourceModule {
     <#
     .SYNOPSIS
-        Imports the named modules from the source folder the calling test
-        mirrors, into the global scope, replacing any copy already loaded.
+        Imports the named modules from the source folder the calling test mirrors,
+        into the global scope, replacing any copy already loaded.
     .DESCRIPTION
-        -Global, because one imported into this module's own scope would be
-        invisible to the test file. Importing again is also the one way to
+        -Global, because one imported into this module's own scope
+        would be invisible to the test file.
+        Importing again is also the one way to
         reset a module's private state between cases.
     #>
     param([Parameter(Mandatory)][string[]]$Name)
@@ -139,8 +151,8 @@ function Assert-Throws {
 function Complete-TestRun {
     <#
     .SYNOPSIS
-        Removes what the file created, prints the tally, and returns the
-        failure count for the file to `exit` with.
+        Removes what the file created, prints the tally,
+        and returns the failure count for the file to `exit` with.
     #>
     Remove-GhStub
     Remove-WebRequestStub
@@ -161,12 +173,13 @@ function Complete-TestRun {
 function New-TestRoot {
     <#
     .SYNOPSIS
-        Creates an empty temp folder for this test file, replacing one left
-        behind by an earlier run, and removes it again in Complete-TestRun.
+        Creates an empty temp folder for this test file,
+        replacing one left behind by an earlier run,
+        and removes it again in Complete-TestRun.
     #>
     param([Parameter(Mandatory)][ValidatePattern('^[\w.-]+$')][string]$Name)
 
-    $root = Join-Path ([System.IO.Path]::GetTempPath()) 'actions-tests' $Name
+    $root = Join-Path ([Path]::GetTempPath()) 'actions-tests' $Name
     Remove-TestFolder -Path $root
     $resolved = New-TestFolder -Path $root
     $script:TestRoots.Add($resolved)
@@ -210,27 +223,29 @@ function Remove-TestFolder {
 function Get-Narration {
     <#
     .SYNOPSIS
-        Runs an action and returns what it printed separately from what it
-        returned.
+        Runs an action and returns what it printed
+        separately from what it returned.
     .DESCRIPTION
-        Write-Host lands on the information stream, so `6>&1` interleaves those
-        records with the action's real output. This splits them back apart, and
-        renders the printed lines the way a terminal shows them: a -NoNewline
-        left open and the write that completes it come back as ONE line.
+        Write-Host lands on the information stream,
+        so `6>&1` interleaves those records with the action's real output.
+        This splits them back apart,
+        and renders the printed lines the way a terminal shows them:
+        a -NoNewline left open and the write that completes it
+        come back as ONE line.
     .OUTPUTS
         Output - the action's pipeline output, always an array.
         Lines  - the printed lines, always an array of strings.
     #>
     param([Parameter(Mandatory)][scriptblock]$Action)
 
-    $lines = [System.Collections.Generic.List[string]]::new()
+    $lines = [List[string]]::new()
     $lineOpen = $false
     $output = @(& $Action 6>&1 | ForEach-Object {
-            if ($_ -isnot [System.Management.Automation.InformationRecord]) { return $_ }
+            if ($_ -isnot [InformationRecord]) { return $_ }
 
             $data = $_.MessageData
             if ($lineOpen) { $lines[$lines.Count - 1] += "$data" } else { $lines.Add("$data") }
-            $lineOpen = $data -is [System.Management.Automation.HostInformationMessage] -and
+            $lineOpen = $data -is [HostInformationMessage] -and
             $data.NoNewLine
         })
 
@@ -241,27 +256,30 @@ function Get-Narration {
 # Stubs
 #───────────────────────────────────────────────────────────────────────────────
 
-# A function shadows an executable of the same name, and a module's command
-# lookup falls through to the global scope, so a global function intercepts
-# every gh, Read-Host, or Install-Module call the code makes. The stubs keep
-# their state in global variables for the same reason: the functions run in
-# the global scope, where this module's own variables are out of reach.
+# A function shadows an executable of the same name,
+# and a module's command lookup falls through to the global scope,
+# so a global function intercepts every gh, Read-Host,
+# or Install-Module call the code makes.
+# The stubs keep their state in global variables for the same reason:
+# the functions run in the global scope,
+# where this module's own variables are out of reach.
 
 function Set-GhStub {
     <#
     .SYNOPSIS
-        Installs the gh stub if it is not already, gives it a new handler, and
-        clears the calls it has recorded.
+        Installs the gh stub if it is not already, gives it a new handler,
+        and clears the calls it has recorded.
     .DESCRIPTION
-        The handler receives the argv as a string array and returns a hashtable
-        with Exit (the exit code) and, optionally, Out (the lines to print).
+        The handler receives the argv as a string array
+        and returns a hashtable with Exit (the exit code)
+        and, optionally, Out (the lines to print).
         Returning nothing at all means "exit 0, print nothing".
     #>
     param([Parameter(Mandatory)][scriptblock]$Handler)
 
     $global:GhStub = @{
         Handler = $Handler
-        Calls   = [System.Collections.Generic.List[string]]::new()
+        Calls   = [List[string]]::new()
     }
 
     if (Get-Command -Name gh -CommandType Function -ErrorAction SilentlyContinue) { return }
@@ -279,8 +297,8 @@ function Set-GhStub {
 function Get-GhCall {
     <#
     .SYNOPSIS
-        Returns every gh argv recorded since the stub was last set, one string
-        each, always as an array.
+        Returns every gh argv recorded since the stub was last set,
+        one string each, always as an array.
     #>
     return , [string[]]$global:GhStub.Calls
 }
@@ -307,18 +325,18 @@ function Remove-GhStub {
 function Set-WebRequestStub {
     <#
     .SYNOPSIS
-        Installs the Invoke-WebRequest stub if it is not already, gives it a
-        new handler, and clears the calls it has recorded.
+        Installs the Invoke-WebRequest stub if it is not already,
+        gives it a new handler, and clears the calls it has recorded.
     .DESCRIPTION
-        The handler receives the call's Uri, Method, and InFile as a
-        hashtable, and returns a hashtable with StatusCode and Content.
+        The handler receives the call's Uri, Method, and InFile as a hashtable,
+        and returns a hashtable with StatusCode and Content.
         Throwing from the handler simulates a connection failure.
     #>
     param([Parameter(Mandatory)][scriptblock]$Handler)
 
     $global:WebRequestStub = @{
         Handler = $Handler
-        Calls   = [System.Collections.Generic.List[hashtable]]::new()
+        Calls   = [List[hashtable]]::new()
     }
 
     if (Get-Command -Name Invoke-WebRequest -CommandType Function -ErrorAction SilentlyContinue) { return }
@@ -341,8 +359,8 @@ function Set-WebRequestStub {
 function Get-WebRequestCall {
     <#
     .SYNOPSIS
-        Returns every call recorded since the stub was last set, one
-        hashtable each, always as an array.
+        Returns every call recorded since the stub was last set,
+        one hashtable each, always as an array.
     #>
     return , [hashtable[]]$global:WebRequestStub.Calls
 }
@@ -350,8 +368,8 @@ function Get-WebRequestCall {
 function Remove-WebRequestStub {
     <#
     .SYNOPSIS
-        Uninstalls the Invoke-WebRequest stub, so the real cmdlet is
-        reachable again.
+        Uninstalls the Invoke-WebRequest stub,
+        so the real cmdlet is reachable again.
     #>
     Remove-Item -Path function:global:Invoke-WebRequest -ErrorAction SilentlyContinue
     Remove-Variable -Name WebRequestStub -Scope Global -ErrorAction SilentlyContinue
@@ -360,15 +378,16 @@ function Remove-WebRequestStub {
 function Set-ReadHostAnswer {
     <#
     .SYNOPSIS
-        Installs the Read-Host stub if it is not already, and queues the
-        answers it will give: one per prompt, an empty string once they run out.
+        Installs the Read-Host stub if it is not already,
+        and queues the answers it will give:
+        one per prompt, an empty string once they run out.
     #>
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][AllowEmptyString()]
         [string[]]$Answer
     )
 
-    $global:ReadHostQueue = [System.Collections.Generic.Queue[string]]::new([string[]]$Answer)
+    $global:ReadHostQueue = [Queue[string]]::new([string[]]$Answer)
     if (Get-Command -Name Read-Host -CommandType Function -ErrorAction SilentlyContinue) { return }
 
     function global:Read-Host {
@@ -382,7 +401,7 @@ function Set-ReadHostAnswer {
         if ($global:ReadHostQueue.Count -gt 0) { $answer = $global:ReadHostQueue.Dequeue() }
         if (-not $AsSecureString) { return $answer }
 
-        $secure = [System.Security.SecureString]::new()
+        $secure = [SecureString]::new()
         foreach ($char in $answer.ToCharArray()) { $secure.AppendChar($char) }
         return $secure
     }
@@ -400,14 +419,17 @@ function Remove-ReadHostStub {
 function Set-InstallModuleStub {
     <#
     .SYNOPSIS
-        Installs the Install-Module stub, replacing any earlier one, and
-        clears the calls it has recorded, so nothing is really installed.
+        Installs the Install-Module stub,
+        replacing any earlier one,
+        and clears the calls it has recorded,
+        so nothing is really installed.
     .DESCRIPTION
-        PowerShellGet's Install-Module is itself a function, so this replaces
-        the global binding rather than shadowing a cmdlet; the real one is not
-        reachable again in this process, which is fine for one test file.
+        PowerShellGet's Install-Module is itself a function,
+        so this replaces the global binding rather than shadowing a cmdlet;
+        the real one is not reachable again in this process,
+        which is fine for one test file.
     #>
-    $global:InstallModuleStub = @{ Calls = [System.Collections.Generic.List[string]]::new() }
+    $global:InstallModuleStub = @{ Calls = [List[string]]::new() }
 
     function global:Install-Module {
         param(
@@ -429,8 +451,8 @@ function Set-InstallModuleStub {
 function Get-InstallModuleCall {
     <#
     .SYNOPSIS
-        Returns every Install-Module call recorded since the stub was last
-        set, one string each, always as an array.
+        Returns every Install-Module call recorded since the stub was last set,
+        one string each, always as an array.
     #>
     return , [string[]]$global:InstallModuleStub.Calls
 }
@@ -447,8 +469,8 @@ function Remove-InstallModuleStub {
 function New-RequiredModulesManifest {
     <#
     .SYNOPSIS
-        Writes a RequiredModules.psd1 listing the given modules under a test
-        root, and returns its path.
+        Writes a RequiredModules.psd1
+        listing the given modules under a test root, and returns its path.
     #>
     param(
         [Parameter(Mandatory)][string]$Path,
@@ -457,7 +479,13 @@ function New-RequiredModulesManifest {
     )
 
     $entries = foreach ($entry in $Module) {
-        $uri = if ($entry.ContainsKey('Uri')) { $entry.Uri } else { "https://example.test/$($entry.Name)" }
+        $uri = if ($entry.ContainsKey('Uri')) {
+            $entry.Uri
+        }
+        else {
+            "https://example.test/$($entry.Name)"
+        }
+
         "        @{ Name = '$($entry.Name)'; MinimumVersion = '$($entry.MinimumVersion)'; Uri = '$uri' }"
     }
 

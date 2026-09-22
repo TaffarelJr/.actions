@@ -2,8 +2,8 @@
 
 <#
 .SYNOPSIS
-    Creates or updates the pull request announcing a template sync, and
-    labels it to match whether it needs a conflict resolved.
+    Creates or updates the pull request announcing a template sync,
+    and labels it to match whether it needs a conflict resolved.
 
 .PARAMETER Repository
     owner/repo to open the pull request in.
@@ -24,15 +24,13 @@
     Whether the sync left conflict markers needing resolution.
 
 .PARAMETER Deleted
-    Paths kept out of this repo rather than landing from the sync, for
-    the body.
+    Paths kept out of this repo rather than landing from the sync, for the body.
 
 .PARAMETER KeptOurs
     Paths where this repo's own version always wins, for the body.
 
 .PARAMETER Missing
-    How many patches the parent held that this repo did not, for the
-    body.
+    How many patches the parent held that this repo did not, for the body.
 
 .PARAMETER Token
     Token used to create or edit the pull request.

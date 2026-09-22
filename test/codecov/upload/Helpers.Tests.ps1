@@ -33,10 +33,10 @@ Write-TestSection '1. Get-CodecovCliUrl and Get-CodecovCliFileName'
 #───────────────────────────────────────────────────────────────────────────────
 
 # Act
-$windowsUrl = Get-CodecovCliUrl -IsWindows $true
-$linuxUrl = Get-CodecovCliUrl -IsWindows $false
-$windowsName = Get-CodecovCliFileName -IsWindows $true
-$linuxName = Get-CodecovCliFileName -IsWindows $false
+$windowsUrl = Get-CodecovCliUrl -Windows $true
+$linuxUrl = Get-CodecovCliUrl -Windows $false
+$windowsName = Get-CodecovCliFileName -Windows $true
+$linuxName = Get-CodecovCliFileName -Windows $false
 
 # Assert
 Assert-Equal 'Windows gets the .exe binary' 'https://cli.codecov.io/latest/windows/codecov.exe' $windowsUrl
