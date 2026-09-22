@@ -4,8 +4,8 @@
 # so every other dotnet/* action can assume dotnet is already on PATH.
 #
 # A thin wrapper over actions/setup-dotnet, not a reimplementation -
-# there is no reason to shell out ourselves for something the toolkit
-# already does correctly.
+# there is no reason to shell out ourselves
+# for something the toolkit already does correctly.
 
 name: Setup .NET
 description: Installs the .NET SDK a repo's global.json names.

@@ -9,8 +9,8 @@ $ErrorActionPreference = 'Stop'
 function Invoke-Build {
     <#
     .SYNOPSIS
-        Builds the solution, stamping in the context's version when it has
-        one, or skips when it has no projects to build.
+        Builds the solution, stamping in the context's version when it has one,
+        or skips when it has no projects to build.
     #>
     param([Parameter(Mandatory)][pscustomobject]$Context)
 

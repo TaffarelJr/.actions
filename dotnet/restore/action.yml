@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 
 # Restores a repo's .NET tools and NuGet packages,
-# so dotnet/build, dotnet/test, and dotnet/pack can all assume
-# --no-restore/--no-build is safe to pass.
+# so dotnet/build, dotnet/test, and dotnet/pack
+# can all assume --no-restore/--no-build is safe to pass.
 #
 # The caller must have run dotnet/setup first -
 # this action does not install the SDK itself.
