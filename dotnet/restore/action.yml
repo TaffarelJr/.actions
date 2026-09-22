@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Restores a repo's .NET tools and NuGet packages,
+# so dotnet/build, dotnet/test, and dotnet/pack can all assume
+# --no-restore/--no-build is safe to pass.
+#
+# The caller must have run dotnet/setup first -
+# this action does not install the SDK itself.
+
+name: Restore .NET
+description: Restores a repo's .NET tools and NuGet packages.
+
+inputs:
+  configuration:
+    description: The build configuration, e.g. Release or Debug.
+    required: false
+    default: Release
+
+runs:
+  using: composite
+  steps:
+    - name: Restore tools and packages
+      shell: pwsh
+      env:
+        CONFIGURATION: ${{ inputs.configuration }}
+      run: >
+        & '${{ github.action_path }}/Restore-Project.ps1'
+        -Configuration $env:CONFIGURATION

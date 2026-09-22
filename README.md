@@ -8,6 +8,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [changelog/build](#changelogbuild)
   - [codecov/upload](#codecovupload)
   - [codecov/validate](#codecovvalidate)
+  - [dotnet/restore](#dotnetrestore)
   - [dotnet/setup](#dotnetsetup)
   - [powershell/restore](#powershellrestore)
   - [powershell/test](#powershelltest)
@@ -106,6 +107,21 @@ it just quietly stops enforcing the thresholds.
 This turns that into a failed check,
 and puts the validator's own reason in the log
 so it says *what* is wrong rather than only *that* something is.
+
+### dotnet/restore
+
+Restores a repo's .NET tools and NuGet packages.
+
+```yaml
+- uses: TaffarelJr/.actions/dotnet/restore@v1
+```
+
+Run `dotnet/setup` first — this action assumes `dotnet` is already on
+`PATH`. Restoring tools (`.config/dotnet-tools.json`) and packages both run
+here, in that order, so `dotnet/build`, `dotnet/test`, and `dotnet/pack` can
+all assume `--no-restore`/`--no-build` is safe to pass. Either step skips
+cleanly, rather than failing, when the repo has nothing of that kind to
+restore — a template's own `Placeholder` solution, say.
 
 ### dotnet/setup
 
