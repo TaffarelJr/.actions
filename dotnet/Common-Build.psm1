@@ -73,16 +73,23 @@ function Get-VersionArgument {
     return , @("-p:Version=$($Context.Version)", "-p:PackageVersion=$($Context.Version)")
 }
 
+function Test-CIEnvironment {
+    <#
+    .SYNOPSIS
+        Reports whether this is running in a workflow, not at a console.
+    #>
+    return [bool]($env:CI -or $env:GITHUB_ACTIONS)
+}
+
 function Write-TaskSkip {
     <#
     .SYNOPSIS
         Reports that a task did nothing: a CI annotation in a workflow,
-        a grey line at a console - the same CI/interactive split
-        Test-InteractiveHost uses.
+        a grey line at a console.
     #>
     param([Parameter(Mandatory)][string]$Reason)
 
-    if ($env:CI -or $env:GITHUB_ACTIONS) {
+    if (Test-CIEnvironment) {
         Write-Host "::notice::Skipped - $Reason"
     }
     else {
@@ -93,5 +100,6 @@ function Write-TaskSkip {
 Export-ModuleMember -Function @(
     'Get-BuildContext'
     'Get-VersionArgument'
+    'Test-CIEnvironment'
     'Write-TaskSkip'
 )

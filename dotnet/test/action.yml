@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# Tests a repo's .NET solution,
+# once per target framework it declares, or once when it declares none.
+#
+# The caller must have run dotnet/setup and dotnet/build first -
+# this action passes --no-build.
+
+name: Test .NET
+description: Tests a repo's .NET solution.
+
+inputs:
+  configuration:
+    description: The build configuration, e.g. Release or Debug.
+    required: false
+    default: Release
+
+runs:
+  using: composite
+  steps:
+    - name: Test the solution
+      shell: pwsh
+      env:
+        CONFIGURATION: ${{ inputs.configuration }}
+      run: >
+        & '${{ github.action_path }}/Invoke-Test.ps1'
+        -Configuration $env:CONFIGURATION

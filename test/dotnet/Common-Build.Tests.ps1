@@ -128,7 +128,37 @@ Assert-Equal 'a version stamps both Version and PackageVersion' '-p:Version=1.2.
     ($stampArgument -join ',')
 
 #───────────────────────────────────────────────────────────────────────────────
-Write-TestSection '5. Write-TaskSkip'
+Write-TestSection '5. Test-CIEnvironment'
+#───────────────────────────────────────────────────────────────────────────────
+
+# Arrange
+$savedCi = $env:CI
+$savedActions = $env:GITHUB_ACTIONS
+$env:CI = $null
+$env:GITHUB_ACTIONS = 'true'
+
+# Act / Assert
+Assert-That 'GITHUB_ACTIONS alone counts as CI' (Test-CIEnvironment)
+
+# Arrange
+$env:GITHUB_ACTIONS = $null
+$env:CI = 'true'
+
+# Act / Assert
+Assert-That 'so does CI alone' (Test-CIEnvironment)
+
+# Arrange
+$env:CI = $null
+
+# Act / Assert
+Assert-That 'neither means a console, not a workflow' (-not (Test-CIEnvironment))
+
+# Arrange - restore, so later sections see the real environment
+$env:CI = $savedCi
+$env:GITHUB_ACTIONS = $savedActions
+
+#───────────────────────────────────────────────────────────────────────────────
+Write-TestSection '6. Write-TaskSkip'
 #───────────────────────────────────────────────────────────────────────────────
 
 # Arrange

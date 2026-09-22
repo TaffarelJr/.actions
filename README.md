@@ -11,6 +11,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [dotnet/build](#dotnetbuild)
   - [dotnet/restore](#dotnetrestore)
   - [dotnet/setup](#dotnetsetup)
+  - [dotnet/test](#dotnettest)
   - [powershell/restore](#powershellrestore)
   - [powershell/test](#powershelltest)
   - [release/draft](#releasedraft)
@@ -152,6 +153,24 @@ A thin wrapper, not a reimplementation — every other `dotnet/*` action
 assumes `dotnet` is already on `PATH` once this step runs. Pass
 `global-json-file` only when `global.json` is not in the repo root;
 `actions/setup-dotnet` already finds it there on its own.
+
+### dotnet/test
+
+Tests a repo's .NET solution.
+
+```yaml
+- uses: TaffarelJr/.actions/dotnet/test@v1
+```
+
+Run `dotnet/setup` and `dotnet/build` first — this action passes
+`--no-build`. Runs once per target framework a test project declares,
+or once, unlabeled, when none of them multi-target — each writes its
+results under `test/results/` and its coverage under `test/coverage/`,
+split into a subfolder per framework when there is more than one. Adds
+`test/Test.runsettings` automatically when the repo has one, and a JUnit
+logger, with an absolute path so per-framework reports cannot collide,
+only inside a workflow. Skips cleanly, rather than failing, when the
+solution has no projects to test.
 
 ### powershell/restore
 
