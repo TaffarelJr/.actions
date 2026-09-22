@@ -8,6 +8,7 @@ Reusable GitHub Actions and workflows shared across all TaffarelJr repos.
   - [changelog/build](#changelogbuild)
   - [codecov/upload](#codecovupload)
   - [codecov/validate](#codecovvalidate)
+  - [dotnet/build](#dotnetbuild)
   - [dotnet/restore](#dotnetrestore)
   - [dotnet/setup](#dotnetsetup)
   - [powershell/restore](#powershellrestore)
@@ -107,6 +108,21 @@ it just quietly stops enforcing the thresholds.
 This turns that into a failed check,
 and puts the validator's own reason in the log
 so it says *what* is wrong rather than only *that* something is.
+
+### dotnet/build
+
+Builds a repo's .NET solution.
+
+```yaml
+- uses: TaffarelJr/.actions/dotnet/build@v1
+  with:
+    version: ${{ steps.version.outputs.semVer }}
+```
+
+Run `dotnet/setup` and `dotnet/restore` first — this action passes
+`--no-restore`. Pass `version` to stamp `-p:Version`/`-p:PackageVersion`
+into the build; without it, the build carries no version at all. Skips
+cleanly, rather than failing, when the solution has no projects to build.
 
 ### dotnet/restore
 

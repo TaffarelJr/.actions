@@ -111,7 +111,24 @@ Assert-That 'no projects means not HasProjects' (-not $emptyContext.HasProjects)
 Assert-Equal 'a failing listing does not leak its exit code to the caller' 0 $LASTEXITCODE
 
 #───────────────────────────────────────────────────────────────────────────────
-Write-TestSection '4. Write-TaskSkip'
+Write-TestSection '4. Get-VersionArgument'
+#───────────────────────────────────────────────────────────────────────────────
+
+# Arrange
+$noVersion = [pscustomobject]@{ Version = '' }
+$withVersion = [pscustomobject]@{ Version = '1.2.3' }
+
+# Act
+$noneArgument = Get-VersionArgument -Context $noVersion
+$stampArgument = Get-VersionArgument -Context $withVersion
+
+# Assert
+Assert-Equal 'no version means nothing to stamp' 0 $noneArgument.Count
+Assert-Equal 'a version stamps both Version and PackageVersion' '-p:Version=1.2.3,-p:PackageVersion=1.2.3' `
+    ($stampArgument -join ',')
+
+#───────────────────────────────────────────────────────────────────────────────
+Write-TestSection '5. Write-TaskSkip'
 #───────────────────────────────────────────────────────────────────────────────
 
 # Arrange
